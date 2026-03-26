@@ -1,0 +1,7 @@
+{
+  "name": "@nba/shared",
+  "private": true,
+  "scripts": {
+    "build": ""
+  }
+}
