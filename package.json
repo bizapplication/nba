@@ -1,0 +1,16 @@
+{
+  "name": "nba",
+  "private": true,
+  "scripts": {
+    "dev:server": "pnpm --filter @nba/crm dev  && pnpm --filter @nba/erp dev ",
+    "dev:web": "pnpm --filter @nba/web dev",
+    "dev:desktop": "pnpm --filter @nba/desktop dev",
+    "build:web": "pnpm --filter @nba/shared build && pnpm --filter @nba/ui build && pnpm --filter @nba/web build",
+    "build:desktop": "pnpm --filter @nba/shared build && pnpm --filter @nba/ui build && pnpm --filter @nba/desktop build",
+    "preview:web": "pnpm --filter @nba/web preview"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
