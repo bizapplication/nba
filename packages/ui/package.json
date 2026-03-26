@@ -1,3 +1,7 @@
 {
-  
+  "name": "@nba/ui",
+  "private": true,
+  "scripts": {
+    "build": ""
+  }
 }
