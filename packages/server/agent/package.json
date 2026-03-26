@@ -1,0 +1,8 @@
+{
+  "name": "@nba/agent",
+  "private": true,
+  "scripts": {
+    "dev":"",
+    "test":""
+  }
+}
