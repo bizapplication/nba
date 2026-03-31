@@ -80,7 +80,19 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+.output
+
+# Turbo build cache
+.turbo
+
+# Ignore dist directories except for deployment outputs
+# We keep specific dist directories for deployment:
+# - apps/web/dist (deployment artifacts)
+# - packages/shared/dist (compiled library)
+# Build dist directories should be ignored:
+# apps/web/.output/dist
+**/.output/dist
+**/build/dist
 
 # Gatsby files
 .cache/
@@ -137,3 +149,34 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE files
+*.swp
+*.swo
+*~
+.vscode/settings.json.local
+.idea/
+*.iml
+*.sublime-*
+
+# pnpm
+.pnpm-store.yaml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+**/build/
+!.nuxt/dist/

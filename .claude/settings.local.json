@@ -14,7 +14,20 @@
       "Bash(pnpm build:web)",
       "Bash(dir:*)",
       "Bash(Select-Object Name)",
-      "Bash(Format-Table -AutoSize \")"
+      "Bash(Format-Table -AutoSize \")",
+      "Bash(powershell \"Get-ChildItem -Path 'G:\\\\code\\\\nba\\\\apps\\\\web\\\\.output\\\\public' -Recurse | Select-Object FullName, Name\")",
+      "Bash(findstr \"index\")",
+      "Bash(findstr \"entry\")",
+      "Bash(findstr \"96OZjhjk\")",
+      "Bash(node deploy.js)",
+      "Bash(node deploy.cjs)",
+      "Bash(npx nuxt:*)",
+      "Bash(powershell -Command \"Remove-Item -Path '.output' -Recurse -Force -ErrorAction SilentlyContinue; Write-Host 'Directory removed'\")",
+      "Bash(powershell -Command \"Copy-Item -Path '.output/public/*' -Destination 'dist' -Recurse -Force; Write-Host 'Files copied successfully'\")",
+      "Bash(powershell -Command \"Copy-Item -Path ''.output/public/*'' -Destination ''dist'' -Recurse -Force; Write-Host ''Files copied successfully''\")",
+      "Bash(git check-ignore:*)",
+      "Bash(git rm:*)",
+      "Bash(find . -maxdepth 2 -name *.swp -o -name *.swo -o -name *~ -o -name .env*)"
     ]
   }
 }

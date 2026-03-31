@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
+    "deploy": "node deploy.js",
     "preview": "nuxt preview",
     "test": "vitest",
     "lint": "eslint . --ext .ts,.vue",
@@ -15,7 +16,7 @@
     "@nba/shared": "workspace:*",
     "@nba/ui": "workspace:*",
     "@nuxt/ui": "^3.0.0",
-    "nuxt": "^3.11.0",
+    "nuxt": "^3.21.2",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
   },

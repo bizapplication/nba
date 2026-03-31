@@ -4,6 +4,70 @@
 
 Web 项目已成功改造为 SPA（单页应用）模式，可直接部署到 nginx。
 
+## 📦 正确的部署流程
+
+由于 Nuxt 3 在 SPA 模式下不直接在根目录生成 index.html，我们使用部署脚本来处理。
+
+### 部署步骤
+
+#### 1. 执行部署脚本
+
+```bash
+# 在 apps/web 目录下运行部署脚本
+cd apps/web
+node deploy.cjs
+```
+
+这将：
+1. 将 `.output/public` 目录的内容复制到 `dist` 目录
+2. 在 `dist` 目录创建 `index.html` 文件
+3. `dist` 目录将被 git 管理，`.output` 目录被忽略
+
+#### 2. 部署到服务器
+
+```bash
+# 部署 dist 目录到服务器
+scp -r apps/web/dist/* user@server:/var/www/nba/
+
+# 或者使用 Git 部署
+cd apps/web/dist
+git init
+git add .
+git commit -m "Deploy NBA Web App (SPA)"
+git push origin main
+```
+
+#### 3. 配置 nginx
+
+```bash
+# 复制 nginx 配置
+scp nginx.conf user@server:/etc/nginx/sites-available/nba
+
+# 启用站点并重启 nginx
+ssh user@server
+sudo ln -s /etc/nginx/sites-available/nba /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### 📁 部署目录结构
+
+部署到服务器的目录结构：
+```
+/var/www/nba/
+├── index.html          ← SPA 入口文件
+├── _nuxt/             ← Nuxt 应用资源
+│   ├── 96OZjhjk.js   ← 主入口
+│   ├── [其他 JS 文件]
+│   ├── entry.C4z7noZx.css
+│   ├── [其他 CSS 文件]
+│   ├── error-404.Dh_S-qKD.css
+│   ├── error-500.CZmRK7Tf.css
+│   ├── builds/
+│   └── u07e-x8o.js
+└── favicon.ico
+```
+
 ## 📦 构建产物位置
 
 ```
