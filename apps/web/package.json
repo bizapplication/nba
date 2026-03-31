@@ -1,11 +1,29 @@
-
 {
   "name": "@nba/web",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "",
-    "test": "",
-    "build": ""
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "test": "vitest",
+    "lint": "eslint . --ext .ts,.vue",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@nba/shared": "workspace:*",
+    "@nba/ui": "workspace:*",
+    "@nuxt/ui": "^3.0.0",
+    "nuxt": "^3.11.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/eslint-config-typescript": "^12.1.0",
+    "@types/node": "^20.11.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
   }
 }

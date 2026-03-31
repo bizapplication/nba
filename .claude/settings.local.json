@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install:*)",
+      "Bash(pnpm dev:web)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3001)",
+      "Bash(tasklist)",
+      "Bash(findstr 39744)",
+      "Bash(taskkill:*)",
+      "Bash(powershell \"Stop-Process -Id 39744 -Force\")",
+      "Bash(pnpm --filter @nba/shared build)",
+      "Bash(pnpm --filter @nba/ui build)",
+      "Bash(pnpm build:web)",
+      "Bash(dir:*)",
+      "Bash(Select-Object Name)",
+      "Bash(Format-Table -AutoSize \")"
+    ]
+  }
+}

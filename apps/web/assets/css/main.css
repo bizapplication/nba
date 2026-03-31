@@ -1,0 +1,36 @@
+/* 自定义 CSS 变量 */
+:root {
+  --nba-primary: #3b82f6;
+  --nba-secondary: #8b5cf6;
+  --nba-success: #10b981;
+  --nba-warning: #f59e0b;
+  --nba-danger: #ef4444;
+}
+
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(209 213 219);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(156 163 175);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgb(55 65 81);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgb(75 85 99);
+}
+
