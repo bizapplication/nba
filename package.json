@@ -6,7 +6,7 @@
     "dev:desktop": "pnpm --filter @nba/desktop dev",
     "dev:server": "pnpm --filter @nba/platform dev && pnpm --filter @nba/agent dev && pnpm --filter @nba/crm dev && pnpm --filter @nba/erp dev",
     "dev:cli": "pnpm --filter @nba/cli dev",
-    "build:web": "pnpm --filter @nba/shared build && pnpm --filter @nba/web build",
+    "build:web": "pnpm --filter @nba/web build",
     "build:desktop": "pnpm --filter @nba/shared build && pnpm --filter @nba/desktop build",
     "build:cli": "pnpm --filter @nba/cli build",
     "preview:web": "pnpm --filter @nba/web preview",

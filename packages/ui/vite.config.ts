@@ -1,27 +1,29 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { fileURLToPath } from 'node:url'
-import { resolve } from 'node:path'
+import dts from 'vite-plugin-dts'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
-  },
+  plugins: [
+    vue(),
+    dts({
+      include: ['src/**/*.ts', 'src/**/*.vue'],
+      outputDir: 'dist',
+      staticImport: true,
+      strictCompilerOptions: true
+    })
+  ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'NbaUI',
+      entry: 'src/index.ts',
+      name: 'NbaUi',
       fileName: (format) => `index.${format === 'es' ? 'mjs' : 'js'}`
     },
     rollupOptions: {
-      external: ['vue', 'lucide-vue-next', '@vueuse/core', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+      external: ['vue', '@nuxt/ui'],
       output: {
         globals: {
-          vue: 'Vue'
+          vue: 'Vue',
+          '@nuxt/ui': 'NuxtUi'
         }
       }
     }
