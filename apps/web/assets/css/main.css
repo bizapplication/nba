@@ -1,13 +1,146 @@
-/* 自定义 CSS 变量 */
-:root {
-  --nba-primary: #3b82f6;
-  --nba-secondary: #8b5cf6;
-  --nba-success: #10b981;
-  --nba-warning: #f59e0b;
-  --nba-danger: #ef4444;
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss" theme(static);
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: 'Public Sans', sans-serif;
+
+  --color-green-50: #effdf5;
+  --color-green-100: #d9fbe8;
+  --color-green-200: #b3f5d1;
+  --color-green-300: #75edae;
+  --color-green-400: #00dc82;
+  --color-green-500: #00c16a;
+  --color-green-600: #00a155;
+  --color-green-700: #007f45;
+  --color-green-800: #016538;
+  --color-green-900: #0a5331;
+  --color-green-950: #052e16;
 }
 
-/* 自定义滚动条样式 */
+:root {
+  color-scheme: light;
+  --erp-shell-surface: rgba(255, 255, 255, 0.82);
+  --erp-shell-border: rgba(15, 23, 42, 0.08);
+  --erp-shell-shadow: 0 24px 48px -24px rgba(15, 23, 42, 0.32);
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(0, 220, 130, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 22%),
+    linear-gradient(180deg, #f2f7f5 0%, #f6faf8 42%, #fbfcfd 100%);
+  font-feature-settings: 'ss01' on, 'cv01' on;
+}
+
+.erp-shell {
+  min-height: 100vh;
+  height: 100vh;
+}
+
+.erp-shell-sidebar {
+  border-right: 1px solid var(--erp-shell-border);
+  background: color-mix(in srgb, var(--ui-bg) 86%, white 14%);
+  backdrop-filter: blur(18px);
+}
+
+.erp-shell-sidebar-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.erp-shell-sidebar-intro {
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 14%, transparent);
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.9), rgba(244, 250, 247, 0.95));
+  box-shadow: 0 20px 40px -28px rgba(15, 23, 42, 0.25);
+}
+
+.erp-shell-main {
+  display: flex;
+  min-width: 0;
+  min-height: 100vh;
+  flex: 1;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.erp-shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--erp-shell-border);
+  background: color-mix(in srgb, var(--erp-shell-surface) 88%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.erp-shell-header-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.erp-shell-header-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.erp-shell-header-icon {
+  display: flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--ui-primary) 14%, white 86%);
+  color: var(--ui-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.erp-shell-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.erp-shell-body {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+}
+
+.finance-shell {
+  min-height: 100vh;
+}
+
+.finance-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0;
+}
+
+.finance-toolbar {
+  display: grid;
+  gap: 0.75rem;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -18,19 +151,45 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(209 213 219);
-  border-radius: 4px;
+  background: rgb(203 213 225);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(156 163 175);
+  background: rgb(148 163 184);
 }
 
 html.dark ::-webkit-scrollbar-thumb {
-  background: rgb(55 65 81);
+  background: rgb(71 85 105);
 }
 
 html.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgb(75 85 99);
+  background: rgb(100 116 139);
 }
 
+@media (min-width: 768px) {
+  .erp-shell-header {
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .erp-shell-body {
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .erp-shell-header-row {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .erp-shell-body {
+    padding: 1.5rem;
+  }
+
+  .finance-toolbar {
+    grid-template-columns: minmax(280px, 1.5fr) minmax(0, 3fr);
+    align-items: start;
+  }
+}
