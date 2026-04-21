@@ -3,7 +3,7 @@ definePageMeta({
   layout: false
 })
 
-await navigateTo('/erp', {
+await navigateTo('/home', {
   replace: true,
   redirectCode: 302
 })

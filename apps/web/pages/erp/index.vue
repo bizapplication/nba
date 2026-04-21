@@ -1,6 +1,13 @@
 <script setup lang="ts">
 const workspaceAreas = [
   {
+    title: '主页',
+    path: '/home',
+    icon: 'i-lucide-house',
+    description: '站点总入口已经切到聊天优先的 Agent 工作台首页，负责发起任务并流向 workspace。',
+    entries: ['Agent 首页', '经营看板', '任务工作区']
+  },
+  {
     title: '客户关系管理',
     path: '/erp/crm',
     icon: 'i-lucide-users',
@@ -50,12 +57,12 @@ const signals = [
     value: '3 大域'
   },
   {
-    label: '并列域状态',
-    value: 'CRM 保留入口'
+    label: '站点总入口',
+    value: '/home'
   },
   {
-    label: '当前阶段',
-    value: 'Scope Realigned'
+    label: '并列域状态',
+    value: 'CRM 保留入口'
   }
 ]
 </script>
@@ -79,7 +86,7 @@ const signals = [
                 企业工作台
               </h2>
               <p class="max-w-3xl text-sm leading-7 text-toned sm:text-base">
-                根首页已经统一收口到 ERP 工作台。当前 outer 仓库继续保留 CRM / ERP / 平台 三个并列一级入口，但 ERP 团队本轮正式 owning scope 明确收口为 Finance / Procurement / HR。
+                当前 `/erp` 继续作为正式业务工作台，站点新的总入口已经切到 `/home`。outer 仓库现在保留 Home / CRM / ERP / 平台 四个并列入口，其中 ERP 团队本轮正式 owning scope 明确收口为 Finance / Procurement / HR。
               </p>
             </div>
           </div>
@@ -107,7 +114,7 @@ const signals = [
                 并列主入口
               </p>
               <p class="text-xs leading-6 text-muted">
-                左侧导航继续保留 CRM / ERP / 平台 三个一级入口，其中 CRM 仅保留并列域入口，不再作为当前 ERP 团队正式模块展开。
+                左侧导航继续保留 Home / CRM / ERP / 平台 四个一级入口，其中 CRM 仅保留并列域入口，不再作为当前 ERP 团队正式模块展开。
               </p>
             </div>
           </template>

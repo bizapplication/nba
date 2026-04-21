@@ -11,6 +11,30 @@ const isDark = computed(() => colorMode.value === 'dark')
 
 const routeMeta = [
   {
+    prefix: '/home/chat',
+    label: 'Agent 会话',
+    subtitle: '查看单条 run 的消息流、关联文件和输出摘要；当前仍为 UI-only 演示语义。',
+    icon: 'i-lucide-messages-square'
+  },
+  {
+    prefix: '/home/workspace',
+    label: '任务工作区',
+    subtitle: '给操作者继续处理 run、历史对话、附件与输出草稿的地方。',
+    icon: 'i-lucide-layout-dashboard'
+  },
+  {
+    prefix: '/home/dashboard',
+    label: '经营看板',
+    subtitle: '给老板和管理层快速查看经营摘要、风险、待办与状态快照的地方。',
+    icon: 'i-lucide-chart-column-big'
+  },
+  {
+    prefix: '/home',
+    label: '主页',
+    subtitle: '聊天优先的 Agent 工作台首页，负责发起任务，不假装真实 AI 已经接通。',
+    icon: 'i-lucide-house'
+  },
+  {
     prefix: '/erp/finance',
     label: '财经管理',
     subtitle: '银行、总账、账户与交易结果层统一收口在外层 ERP 工作台。',
@@ -49,7 +73,7 @@ const routeMeta = [
   {
     prefix: '/erp',
     label: '企业工作台',
-    subtitle: '根首页已统一收口到 /erp。当前 ERP owning scope 收口为 Finance / Procurement / HR，CRM 作为其他部门负责的并列域保留一级入口。',
+    subtitle: 'ERP 继续作为正式业务工作台承接 Finance / Procurement / HR；站点新的总入口已切到 /home。',
     icon: 'i-lucide-panels-top-left'
   }
 ]
@@ -57,13 +81,23 @@ const routeMeta = [
 const currentSection = computed(() => {
   return routeMeta.find((item) => route.path.startsWith(item.prefix)) ?? {
     prefix: '/',
-    label: '企业工作台',
-    subtitle: '当前 outer 仓库以 /erp 作为统一工作台首页，当前 ERP 正式 owning scope 为 Finance / Procurement / HR。',
-    icon: 'i-lucide-layout-dashboard'
+    label: '主页',
+    subtitle: '当前站点以 /home 作为新的聊天优先入口，ERP 正式 owning scope 仍为 Finance / Procurement / HR。',
+    icon: 'i-lucide-house'
   }
 })
 
 const primaryLinks = computed<NavigationMenuItem[]>(() => [
+  {
+    label: '主页',
+    icon: 'i-lucide-house',
+    defaultOpen: true,
+    children: [
+      { label: 'Agent 首页', icon: 'i-lucide-sparkles', to: '/home' },
+      { label: '经营看板', icon: 'i-lucide-chart-column-big', to: '/home/dashboard' },
+      { label: '任务工作区', icon: 'i-lucide-layout-dashboard', to: '/home/workspace' }
+    ]
+  },
   {
     label: '客户关系管理',
     icon: 'i-lucide-users',
@@ -128,6 +162,15 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => [
 ])
 
 const searchGroups = computed(() => [
+  {
+    id: 'home',
+    label: '主页',
+    items: [
+      { label: 'Agent 首页', icon: 'i-lucide-sparkles', to: '/home' },
+      { label: '经营看板', icon: 'i-lucide-chart-column-big', to: '/home/dashboard' },
+      { label: '任务工作区', icon: 'i-lucide-layout-dashboard', to: '/home/workspace' }
+    ]
+  },
   {
     id: 'crm',
     label: '客户关系管理（并列域）',
@@ -208,40 +251,12 @@ function toggleColorMode() {
       </template>
 
       <div class="erp-shell-sidebar-body">
-        <UCard variant="subtle" class="erp-shell-sidebar-intro">
-          <div class="space-y-2">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary/70">
-              Unified Navigation
-            </p>
-            <p class="text-sm font-semibold text-highlighted">
-              CRM 继续保留一级入口，当前 ERP owning scope 已收口到 Finance / Procurement / HR
-            </p>
-            <p v-if="!collapsed" class="text-xs leading-5 text-muted">
-              顶部现在只保留通知、主题切换等工具动作，业务导航统一回到左侧主层级。
-            </p>
-          </div>
-        </UCard>
-
         <UDashboardSearchButton class="w-full" />
         <UNavigationMenu orientation="vertical" :items="primaryLinks" />
       </div>
 
       <template #footer>
-        <div class="space-y-3">
-          <UCard
-            v-if="!collapsed"
-            variant="subtle"
-            class="rounded-2xl border border-default/70"
-          >
-            <div class="space-y-1">
-              <p class="text-xs uppercase tracking-[0.22em] text-muted">
-                Workspace
-              </p>
-              <p class="text-sm font-semibold text-highlighted">
-                当前正式 scope = Finance / Procurement / HR
-              </p>
-            </div>
-          </UCard>
+        <div>
           <UserMenu :collapsed="collapsed" />
         </div>
       </template>
