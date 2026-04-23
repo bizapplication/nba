@@ -9,6 +9,7 @@ export interface HomeRun {
   model: string
   promptPreview: string
   createdAt: string
+  updatedAt: string
   attachmentCount: number
   summary: string
 }
@@ -39,6 +40,7 @@ export interface HomeChatThread {
   status: HomeRunStatus
   model: string
   createdAt: string
+  updatedAt: string
   promptPreview: string
   summary: string
   attachments: HomeAttachment[]

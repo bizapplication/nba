@@ -70,6 +70,8 @@ const fallbackModel: HomeModelOption = homeModelOptions[0] ?? {
   note: '适合复杂拆解、跨模块分析与长上下文整理。'
 }
 
+const HOME_UNIMPLEMENTED_REPLY = '当前功能未实现'
+
 const seedRuns: HomeRun[] = [
   {
     id: 'run-quarter-close-20260421',
@@ -78,6 +80,7 @@ const seedRuns: HomeRun[] = [
     model: 'OpenAI · GPT-5.4',
     promptPreview: '对比总账、付款和收款回流记录，解释当前差异来源并列出优先处理顺序。',
     createdAt: '2026-04-21 09:40',
+    updatedAt: '2026-04-21 09:40',
     attachmentCount: 2,
     summary: '正在拆解差异成因，预计会输出一份面向 Finance 的核对清单。'
   },
@@ -88,6 +91,7 @@ const seedRuns: HomeRun[] = [
     model: 'Google · Gemini 3.1',
     promptPreview: '结合采购订单、供应商发票和付款节奏，给出未来两周的现金占用预估。',
     createdAt: '2026-04-21 08:25',
+    updatedAt: '2026-04-21 08:25',
     attachmentCount: 1,
     summary: '已形成付款优先级建议，并归纳出两项需要业务负责人决策的节点。'
   },
@@ -98,6 +102,7 @@ const seedRuns: HomeRun[] = [
     model: 'Kimi · Kimi 2.6',
     promptPreview: '帮我筛出当前报销执行中最可能影响月底结算的异常项，并说明缺口。',
     createdAt: '2026-04-20 16:10',
+    updatedAt: '2026-04-20 16:10',
     attachmentCount: 3,
     summary: '发现员工归属与付款账户信息缺失，已标记为需补资料的阻塞项。'
   }
@@ -110,6 +115,7 @@ const seedThreads: HomeChatThread[] = [
     status: 'running',
     model: 'OpenAI · GPT-5.4',
     createdAt: '2026-04-21 09:40',
+    updatedAt: '2026-04-21 09:40',
     promptPreview: '对比总账、付款和收款回流记录，解释当前差异来源并列出优先处理顺序。',
     summary: '正在拆解差异成因，预计会输出一份面向 Finance 的核对清单。',
     attachments: [
@@ -117,12 +123,6 @@ const seedThreads: HomeChatThread[] = [
       { id: 'att-close-notes', name: 'close-notes.pdf', type: 'document', sizeLabel: '640 KB' }
     ],
     messages: [
-      {
-        id: 'msg-close-system',
-        role: 'system',
-        content: '当前为 UI-only 演示态：展示任务分析流程，但不连接真实模型和真实后端执行链路。',
-        createdAt: '2026-04-21 09:40'
-      },
       {
         id: 'msg-close-user',
         role: 'user',
@@ -132,7 +132,7 @@ const seedThreads: HomeChatThread[] = [
       {
         id: 'msg-close-assistant',
         role: 'assistant',
-        content: '已先按 Finance -> Procurement -> HR 的顺序组织核对路径。当前初步判断差异集中在两类：一类是付款执行时间与过账时间不一致，另一类是收款回流尚未在管理口径里被完全吸收。我会继续把差异项拆成可执行清单。',
+        content: HOME_UNIMPLEMENTED_REPLY,
         createdAt: '2026-04-21 09:42'
       }
     ],
@@ -147,6 +147,7 @@ const seedThreads: HomeChatThread[] = [
     status: 'completed',
     model: 'Google · Gemini 3.1',
     createdAt: '2026-04-21 08:25',
+    updatedAt: '2026-04-21 08:25',
     promptPreview: '结合采购订单、供应商发票和付款节奏，给出未来两周的现金占用预估。',
     summary: '已形成付款优先级建议，并归纳出两项需要业务负责人决策的节点。',
     attachments: [
@@ -162,7 +163,7 @@ const seedThreads: HomeChatThread[] = [
       {
         id: 'msg-proc-assistant',
         role: 'assistant',
-        content: '已基于当前 mock 数据生成付款压力拆解。结论是本周五前需要优先处理两笔高金额付款，否则下周的收货安排会与现金头寸产生冲突。',
+        content: HOME_UNIMPLEMENTED_REPLY,
         createdAt: '2026-04-21 08:27'
       }
     ],
@@ -177,6 +178,7 @@ const seedThreads: HomeChatThread[] = [
     status: 'blocked',
     model: 'Kimi · Kimi 2.6',
     createdAt: '2026-04-20 16:10',
+    updatedAt: '2026-04-20 16:10',
     promptPreview: '帮我筛出当前报销执行中最可能影响月底结算的异常项，并说明缺口。',
     summary: '发现员工归属与付款账户信息缺失，已标记为需补资料的阻塞项。',
     attachments: [
@@ -194,7 +196,7 @@ const seedThreads: HomeChatThread[] = [
       {
         id: 'msg-expense-assistant',
         role: 'assistant',
-        content: '已先按“资料缺口、金额异常、付款账户不匹配”三类做初筛。当前最大的阻塞不是金额本身，而是任职关系和付款账户字段存在缺口，导致两笔报销无法自动进入下一步。',
+        content: HOME_UNIMPLEMENTED_REPLY,
         createdAt: '2026-04-20 16:12'
       }
     ],
@@ -274,6 +276,7 @@ function createThreadMap(threads: HomeChatThread[]) {
 
 export function useHomeWorkspace() {
   const runSequence = useState('home-run-sequence', () => 4)
+  const conversationTick = useState('home-conversation-tick', () => 0)
   const runs = useState<HomeRun[]>('home-runs', () => seedRuns.map(cloneRun))
   const threads = useState<Record<string, HomeChatThread>>('home-threads', () => createThreadMap(seedThreads))
   const selectedModel = useState('home-selected-model', () => fallbackModel.value)
@@ -294,8 +297,12 @@ export function useHomeWorkspace() {
         return statusDelta
       }
 
-      return right.createdAt.localeCompare(left.createdAt)
+      return right.updatedAt.localeCompare(left.updatedAt)
     })
+  })
+
+  const recentConversations = computed(() => {
+    return [...runs.value].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
   })
 
   const workspaceFiles = computed(() => {
@@ -322,7 +329,7 @@ export function useHomeWorkspace() {
   })
 
   const workspaceChats = computed(() => {
-    return orderedRuns.value.slice(0, 5)
+    return recentConversations.value.slice(0, 5)
   })
 
   const dashboardKpis = computed(() => [
@@ -390,6 +397,36 @@ export function useHomeWorkspace() {
     return `${prefix}-${value}`
   }
 
+  function formatTimestamp(date: Date) {
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    const hour = `${date.getHours()}`.padStart(2, '0')
+    const minute = `${date.getMinutes()}`.padStart(2, '0')
+    return `${year}-${month}-${day} ${hour}:${minute}`
+  }
+
+  function nextTimestamp() {
+    const date = new Date('2026-04-23T09:30:00')
+    date.setMinutes(date.getMinutes() + conversationTick.value)
+    conversationTick.value += 1
+    return formatTimestamp(date)
+  }
+
+  function normalizePrompt(prompt: string) {
+    const trimmed = prompt.trim()
+
+    if (trimmed.length > 0) {
+      return trimmed
+    }
+
+    if (draftAttachments.value.length > 0) {
+      return '请结合我刚上传的资料继续处理。'
+    }
+
+    return '请告诉我接下来应该关注什么。'
+  }
+
   function setPrompt(prompt: string) {
     draftPrompt.value = prompt
   }
@@ -421,9 +458,8 @@ export function useHomeWorkspace() {
   }
 
   function createMockRun(payload?: { prompt?: string }) {
-    const prompt = (payload?.prompt ?? draftPrompt.value).trim()
-    const safePrompt = prompt || '请结合附件整理重点信息，并给出下一步建议。'
-    const createdAt = '2026-04-21 11:20'
+    const safePrompt = normalizePrompt(payload?.prompt ?? draftPrompt.value)
+    const createdAt = nextTimestamp()
     const title = safePrompt.length > 18 ? `${safePrompt.slice(0, 18)}…` : safePrompt
     const modelLabel = currentModel.value.label
     const attachmentSnapshot = draftAttachments.value.map(cloneAttachment)
@@ -432,14 +468,13 @@ export function useHomeWorkspace() {
     const run: HomeRun = {
       id: runId,
       title,
-      status: attachmentSnapshot.length > 0 ? 'running' : 'queued',
+      status: 'completed',
       model: modelLabel,
       promptPreview: safePrompt,
       createdAt,
+      updatedAt: createdAt,
       attachmentCount: attachmentSnapshot.length,
-      summary: attachmentSnapshot.length > 0
-        ? '已创建 mock run，并携带附件进入任务工作区等待进一步整理。'
-        : '已创建 mock run，等待把问题拆成可执行的下一步。'
+      summary: HOME_UNIMPLEMENTED_REPLY
     }
 
     const thread: HomeChatThread = {
@@ -448,6 +483,7 @@ export function useHomeWorkspace() {
       status: run.status,
       model: modelLabel,
       createdAt,
+      updatedAt: createdAt,
       promptPreview: safePrompt,
       summary: run.summary,
       attachments: attachmentSnapshot,
@@ -461,17 +497,15 @@ export function useHomeWorkspace() {
         {
           id: nextId('message'),
           role: 'assistant',
-          content: attachmentSnapshot.length > 0
-            ? `已收到 ${attachmentSnapshot.length} 份附件。我会先整理关键事实，再生成一版适合进入 workspace 的执行摘要。`
-            : '已记录你的任务请求。当前为前端演示态，我会先给出一版执行摘要与建议输出。',
+          content: HOME_UNIMPLEMENTED_REPLY,
           createdAt
         }
       ],
       outputs: [
         {
           id: nextId('output'),
-          label: '执行摘要草稿',
-          description: '把当前任务的目标、关注点和下一步动作收成一页式摘要。'
+          label: '占位输出',
+          description: HOME_UNIMPLEMENTED_REPLY
         }
       ]
     }
@@ -484,6 +518,62 @@ export function useHomeWorkspace() {
     clearDraft()
 
     return run
+  }
+
+  function sendMessageToThread(runId: string, payload?: { prompt?: string }) {
+    const existingThread = threads.value[runId]
+
+    if (!existingThread) {
+      return null
+    }
+
+    const safePrompt = normalizePrompt(payload?.prompt ?? draftPrompt.value)
+    const createdAt = nextTimestamp()
+    const attachmentSnapshot = draftAttachments.value.map(cloneAttachment)
+    const nextThread: HomeChatThread = {
+      ...cloneThread(existingThread),
+      updatedAt: createdAt,
+      attachments: [...existingThread.attachments.map(cloneAttachment), ...attachmentSnapshot],
+      messages: [
+        ...existingThread.messages.map(cloneMessage),
+        {
+          id: nextId('message'),
+          role: 'user',
+          content: safePrompt,
+          createdAt
+        },
+        {
+          id: nextId('message'),
+          role: 'assistant',
+          content: HOME_UNIMPLEMENTED_REPLY,
+          createdAt
+        }
+      ],
+      summary: HOME_UNIMPLEMENTED_REPLY
+    }
+
+    threads.value = {
+      ...threads.value,
+      [runId]: nextThread
+    }
+
+    runs.value = runs.value.map((run) => {
+      if (run.id !== runId) {
+        return run
+      }
+
+      return {
+        ...run,
+        status: 'completed',
+        updatedAt: createdAt,
+        attachmentCount: run.attachmentCount + attachmentSnapshot.length,
+        summary: HOME_UNIMPLEMENTED_REPLY
+      }
+    })
+
+    clearDraft()
+
+    return nextThread
   }
 
   function getThread(runId: string) {
@@ -501,6 +591,7 @@ export function useHomeWorkspace() {
     modelOptions,
     orderedRuns,
     promptGroups,
+    recentConversations,
     selectedModel,
     workflowShortcuts,
     workspaceChats,
@@ -511,6 +602,7 @@ export function useHomeWorkspace() {
     createMockRun,
     getThread,
     removeDraftAttachment,
+    sendMessageToThread,
     setPrompt,
     setSelectedModel
   }

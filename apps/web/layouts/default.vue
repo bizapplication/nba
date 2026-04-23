@@ -2,90 +2,8 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute()
-const colorMode = useColorMode()
 const open = ref(false)
 const collapsed = ref(false)
-const notificationsOpen = useState('notifications-open', () => false)
-
-const isDark = computed(() => colorMode.value === 'dark')
-
-const routeMeta = [
-  {
-    prefix: '/home/chat',
-    label: 'Agent 会话',
-    subtitle: '查看单条 run 的消息流、关联文件和输出摘要；当前仍为 UI-only 演示语义。',
-    icon: 'i-lucide-messages-square'
-  },
-  {
-    prefix: '/home/workspace',
-    label: '任务工作区',
-    subtitle: '给操作者继续处理 run、历史对话、附件与输出草稿的地方。',
-    icon: 'i-lucide-layout-dashboard'
-  },
-  {
-    prefix: '/home/dashboard',
-    label: '经营看板',
-    subtitle: '给老板和管理层快速查看经营摘要、风险、待办与状态快照的地方。',
-    icon: 'i-lucide-chart-column-big'
-  },
-  {
-    prefix: '/home',
-    label: '主页',
-    subtitle: '聊天优先的 Agent 工作台首页，负责发起任务，不假装真实 AI 已经接通。',
-    icon: 'i-lucide-house'
-  },
-  {
-    prefix: '/erp/finance',
-    label: '财经管理',
-    subtitle: '银行、总账、账户与交易结果层统一收口在外层 ERP 工作台。',
-    icon: 'i-lucide-landmark'
-  },
-  {
-    prefix: '/erp/procurement',
-    label: '采购管理',
-    subtitle: '供应商、订单、收货、发票与付款链路已经全部迁入外层前端。',
-    icon: 'i-lucide-shopping-cart'
-  },
-  {
-    prefix: '/erp/crm',
-    label: '客户关系管理',
-    subtitle: '该域继续保留一级入口，但已明确为其他部门负责，不再属于当前 ERP 团队正式 owning scope。',
-    icon: 'i-lucide-users'
-  },
-  {
-    prefix: '/erp/hr',
-    label: '人力资源',
-    subtitle: '部门、岗位、员工、任职与报销单在统一 ERP 壳内协同工作。',
-    icon: 'i-lucide-users-round'
-  },
-  {
-    prefix: '/platform',
-    label: '平台管理',
-    subtitle: '平台页继续保留在外层仓库，作为 ERP 的共享能力基座。',
-    icon: 'i-lucide-settings-2'
-  },
-  {
-    prefix: '/crm',
-    label: 'CRM 对照入口',
-    subtitle: '该入口作为并列域对照页保留，不承担当前 ERP 团队的正式验收职责。',
-    icon: 'i-lucide-rocket'
-  },
-  {
-    prefix: '/erp',
-    label: '企业工作台',
-    subtitle: 'ERP 继续作为正式业务工作台承接 Finance / Procurement / HR；站点新的总入口已切到 /home。',
-    icon: 'i-lucide-panels-top-left'
-  }
-]
-
-const currentSection = computed(() => {
-  return routeMeta.find((item) => route.path.startsWith(item.prefix)) ?? {
-    prefix: '/',
-    label: '主页',
-    subtitle: '当前站点以 /home 作为新的聊天优先入口，ERP 正式 owning scope 仍为 Finance / Procurement / HR。',
-    icon: 'i-lucide-house'
-  }
-})
 
 const primaryLinks = computed<NavigationMenuItem[]>(() => [
   {
@@ -230,10 +148,6 @@ watch(
     open.value = false
   }
 )
-
-function toggleColorMode() {
-  colorMode.preference = isDark.value ? 'light' : 'dark'
-}
 </script>
 
 <template>
@@ -247,12 +161,25 @@ function toggleColorMode() {
       class="erp-shell-sidebar"
     >
       <template #header>
-        <TenantsMenu :collapsed="collapsed" />
+        <div class="flex items-center gap-2">
+          <TenantsMenu :collapsed="collapsed" />
+        </div>
       </template>
 
       <div class="erp-shell-sidebar-body">
-        <UDashboardSearchButton class="w-full" />
-        <UNavigationMenu orientation="vertical" :items="primaryLinks" />
+        <UDashboardSearchButton
+          :collapsed="collapsed"
+          :tooltip="collapsed"
+          :class="collapsed ? 'mx-auto' : 'w-full'"
+        />
+        <UNavigationMenu
+          orientation="vertical"
+          :items="primaryLinks"
+          :collapsed="collapsed"
+          popover
+          tooltip
+          :ui="collapsed ? { link: 'justify-center' } : undefined"
+        />
       </div>
 
       <template #footer>
@@ -263,61 +190,18 @@ function toggleColorMode() {
     </UDashboardSidebar>
 
     <div class="erp-shell-main">
-      <header class="erp-shell-header">
-        <div class="erp-shell-header-row">
-          <div class="erp-shell-header-copy">
-            <UButton
-              icon="i-lucide-panel-left-open"
-              color="neutral"
-              variant="ghost"
-              class="lg:hidden"
-              @click="open = true"
-            />
-
-            <div class="space-y-2">
-              <div class="flex flex-wrap items-center gap-2">
-                <UBadge variant="soft" color="primary">
-                  NBA Workspace
-                </UBadge>
-                <UBadge variant="outline" color="neutral">
-                  {{ currentSection.label }}
-                </UBadge>
-              </div>
-
-              <div class="flex items-start gap-3">
-                <div class="erp-shell-header-icon">
-                  <UIcon :name="currentSection.icon" class="size-5" />
-                </div>
-                <div class="min-w-0 space-y-1">
-                  <h1 class="text-xl font-semibold text-highlighted sm:text-2xl">
-                    {{ currentSection.label }}
-                  </h1>
-                  <p class="max-w-3xl text-sm leading-6 text-toned">
-                    {{ currentSection.subtitle }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="erp-shell-header-actions">
-            <UButton
-              icon="i-lucide-bell"
-              color="neutral"
-              variant="ghost"
-              @click="notificationsOpen = true"
-            />
-            <UButton
-              :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
-              color="neutral"
-              variant="ghost"
-              @click="toggleColorMode"
-            />
-          </div>
-        </div>
-      </header>
-
       <main class="erp-shell-body">
+        <UButton
+          v-if="!open"
+          icon="i-lucide-panel-left-open"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          square
+          class="fixed bottom-4 left-4 z-30 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.4)] lg:hidden"
+          aria-label="打开导航栏"
+          @click="open = true"
+        />
         <slot />
       </main>
     </div>
