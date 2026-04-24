@@ -1,4 +1,13 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { CustomerORM } from './CustomerORM';
 
 @Entity({ name: 'orders' })
 export class OrderORM {
@@ -8,7 +17,7 @@ export class OrderORM {
   @Column({ type: 'varchar', length: 80, unique: true })
   orderNo!: string;
 
-  @Column({ type: 'varchar', length: 80 })
+  @Column({ type: 'uuid' })
   customerId!: string;
 
   @Column({ type: 'varchar', length: 120 })
@@ -31,4 +40,8 @@ export class OrderORM {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
+
+  @ManyToOne(() => CustomerORM, (customer) => customer.orders, { nullable: false })
+  @JoinColumn({ name: 'customerId' })
+  customer?: CustomerORM;
 }

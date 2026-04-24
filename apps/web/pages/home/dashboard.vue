@@ -1,69 +1,83 @@
 <script setup lang="ts">
-const { dashboardRiskAlerts, dashboardTodos, dashboardTrend } = useHomeWorkspace()
+definePageMeta({
+  middleware: 'home-auth'
+})
 
-const businessSignals = [
-  {
-    label: '本周付款压力',
-    value: '高',
-    hint: '两笔高金额供应商付款需要在周五前确认排程。'
-  },
-  {
-    label: '关账差异提醒',
-    value: '2 项',
-    hint: '差异主要集中在业务时间与过账时间的口径对齐。'
-  },
-  {
-    label: '高优先级风险',
-    value: '3 项',
-    hint: '涉及付款安排、报销资料缺口和现金排程。'
-  },
-  {
-    label: '待管理层拍板',
-    value: '2 项',
-    hint: '需要明确付款优先级与月底资源安排。'
-  }
-]
+const {
+  dashboardMetrics,
+  ensureThread,
+  orderedRuns,
+  pendingActionRequests,
+  refreshRuns
+} = useHomeWorkspace()
 
-const businessKpis = [
-  {
-    label: '财务摘要',
-    value: '差异收口中',
-    hint: '当前重点是关账差异核对、资金位置确认和结果层口径统一。'
-  },
-  {
-    label: '采购付款',
-    value: '2 笔紧急',
-    hint: '优先处理高金额供应商付款，避免影响下周收货与交付。'
-  },
-  {
-    label: '报销执行',
-    value: '5 单待处理',
-    hint: '重点关注资料完整度、付款准备和月底执行节奏。'
-  },
-  {
-    label: '管理待办',
-    value: '7 项',
-    hint: '跨 Finance / Procurement / HR 的协同事项已进入收口排期。'
-  }
-]
+await refreshRuns()
 
-const domainBoards = [
+for (const run of orderedRuns.value.slice(0, 6)) {
+  await ensureThread(run.id)
+}
+
+const businessSignals = computed(() => [
   {
-    title: 'Finance',
-    note: '财务摘要与关账提醒',
-    description: '优先让管理层看到差异、资金位置和需要财务继续核对的关键节点。'
+    label: '总运行数',
+    value: String(dashboardMetrics.value.totalRuns),
+    hint: '当前本地 demo 中已保存的 AI run 数量。'
   },
   {
-    title: 'Procurement',
-    note: '付款节奏与订单依赖',
-    description: '先暴露付款压力、供应商影响和近期需要管理层拍板的采购节点。'
+    label: '待审批动作',
+    value: String(dashboardMetrics.value.pendingApprovals),
+    hint: '还没放行的文件、命令和浏览器动作都会在这里体现。'
   },
   {
-    title: 'HR',
-    note: '报销执行与资料完整度',
-    description: '重点提示资料缺口、执行节奏和哪些组织侧待办会拖慢当前闭环。'
+    label: '阻塞 run',
+    value: String(dashboardMetrics.value.blockedRuns),
+    hint: '通常表示等待审批、被拒绝，或执行阶段出现异常。'
+  },
+  {
+    label: '关联附件',
+    value: String(dashboardMetrics.value.attachments),
+    hint: '已随 run 保存到本地 demo 工作区的文件数。'
   }
-]
+])
+
+const businessKpis = computed(() => [
+  {
+    label: '已完成 run',
+    value: String(dashboardMetrics.value.completedRuns),
+    hint: '这类 run 已经形成最终答复，或审批动作已经执行完成。'
+  },
+  {
+    label: '运行中',
+    value: String(orderedRuns.value.filter((run) => run.status === 'running').length),
+    hint: '最近提交后仍在处理中的任务。'
+  },
+  {
+    label: '待继续处理',
+    value: String(orderedRuns.value.filter((run) => run.status === 'blocked').length),
+    hint: '通常意味着下一步需要你审批、拒绝或补充追问。'
+  },
+  {
+    label: '最近任务数',
+    value: String(orderedRuns.value.length),
+    hint: 'demo 当前按本地 SQLite 持久化，刷新页面不会丢失。'
+  }
+])
+
+const riskAlerts = computed(() => {
+  return pendingActionRequests.value.slice(0, 4).map((action) => ({
+    title: action.title,
+    level: action.kind === 'command' ? 'High' : 'Medium',
+    description: `${action.runTitle}：${action.summary}`
+  }))
+})
+
+const todoRuns = computed(() => {
+  return orderedRuns.value.slice(0, 4).map((run) => ({
+    title: run.title,
+    owner: run.model,
+    dueAt: run.createdAt
+  }))
+})
 </script>
 
 <template>
@@ -76,16 +90,16 @@ const domainBoards = [
               Dashboard
             </UBadge>
             <UBadge color="neutral" variant="outline">
-              Mock Snapshot
+              Real Snapshot
             </UBadge>
           </div>
 
           <div class="space-y-3">
             <h2 class="text-3xl font-semibold leading-tight text-highlighted sm:text-4xl">
-              经营看板是给老板和管理层先扫业务状态、风险和待办的地方。
+              经营看板是给老板和管理层先扫 demo 当前运行状态、风险和待办的地方。
             </h2>
             <p class="max-w-3xl text-sm leading-7 text-toned sm:text-base">
-              这里集中展示财务摘要、付款压力、风险预警和待办快照，帮助管理层先判断哪里需要继续深入，再进入具体业务页做确认。
+              这里展示的不是静态 mock，而是本地 OpenClaw demo 的 run、审批和附件快照，帮助你快速判断当前演示进度和下一步要处理的动作。
             </p>
           </div>
         </div>
@@ -97,7 +111,7 @@ const domainBoards = [
                 业务状态信号
               </p>
               <p class="text-xs leading-6 text-muted">
-                右侧优先放付款压力、关账提醒、高优先级风险和待决策事项，用来支持管理判断。
+                右侧优先汇总 run、审批、附件与阻塞状态，用来支持演示判断。
               </p>
             </div>
           </template>
@@ -148,55 +162,31 @@ const domainBoards = [
         <template #header>
           <div class="space-y-1">
             <h3 class="text-lg font-semibold text-highlighted">
-              经营脉冲
+              最近运行概览
             </h3>
             <p class="text-sm leading-6 text-muted">
-              用稳定 mock 数据表达管理层需要先扫一眼的经营变化，不接真实 ERP 聚合接口。
+              从这里可以快速回到最近的 run，继续展示真实问答或审批链路。
             </p>
           </div>
         </template>
 
-        <div class="space-y-6">
-          <div class="flex items-end gap-3 rounded-[1.5rem] border border-default/70 bg-default/20 px-4 py-6">
-            <div
-              v-for="point in dashboardTrend"
-              :key="point.label"
-              class="flex min-w-0 flex-1 flex-col items-center gap-3"
-            >
-              <div class="flex h-48 w-full items-end rounded-full bg-white/80 px-2 py-2">
-                <div
-                  class="w-full rounded-full bg-[linear-gradient(180deg,rgba(0,220,130,0.9),rgba(14,165,233,0.72))]"
-                  :style="{ height: `${point.value}%` }"
-                />
-              </div>
-              <div class="text-center">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                  {{ point.label }}
-                </p>
-                <p class="mt-1 text-sm font-semibold text-highlighted">
-                  {{ point.value }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid gap-4 md:grid-cols-3">
-            <div
-              v-for="board in domainBoards"
-              :key="board.title"
-              class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4"
-            >
-              <p class="text-sm font-semibold text-highlighted">
-                {{ board.title }}
-              </p>
-              <p class="mt-1 text-xs uppercase tracking-[0.18em] text-primary/70">
-                {{ board.note }}
-              </p>
-              <p class="mt-3 text-sm leading-6 text-toned">
-                {{ board.description }}
-              </p>
-            </div>
-          </div>
+        <div class="grid gap-4 md:grid-cols-3">
+          <NuxtLink
+            v-for="run in orderedRuns.slice(0, 3)"
+            :key="run.id"
+            :to="`/home/chat/${run.id}`"
+            class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4 transition hover:border-primary/30 hover:bg-primary/5"
+          >
+            <p class="text-sm font-semibold text-highlighted">
+              {{ run.title }}
+            </p>
+            <p class="mt-1 text-xs uppercase tracking-[0.18em] text-primary/70">
+              {{ run.model }}
+            </p>
+            <p class="mt-3 text-sm leading-6 text-toned">
+              {{ run.summary }}
+            </p>
+          </NuxtLink>
         </div>
       </UCard>
 
@@ -208,14 +198,14 @@ const domainBoards = [
                 风险预警
               </h3>
               <p class="text-sm leading-6 text-muted">
-                优先暴露最需要管理侧和业务侧尽快处理的经营风险。
+                优先暴露最需要继续确认或放行的动作。
               </p>
             </div>
           </template>
 
           <div class="space-y-3">
             <div
-              v-for="risk in dashboardRiskAlerts"
+              v-for="risk in riskAlerts"
               :key="risk.title"
               class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4"
             >
@@ -231,6 +221,10 @@ const domainBoards = [
                 {{ risk.description }}
               </p>
             </div>
+
+            <div v-if="!riskAlerts.length" class="rounded-2xl border border-dashed border-default/70 bg-default/10 px-4 py-6 text-sm leading-6 text-muted">
+              当前没有待审批或高优先级风险动作。
+            </div>
           </div>
         </UCard>
 
@@ -241,14 +235,14 @@ const domainBoards = [
                 待办摘要
               </h3>
               <p class="text-sm leading-6 text-muted">
-                只保留足够支持管理判断的待办摘要，不展开执行过程细节。
+                保留足够支持管理判断的 run 摘要，不展开执行细节。
               </p>
             </div>
           </template>
 
           <div class="space-y-3">
             <div
-              v-for="todo in dashboardTodos"
+              v-for="todo in todoRuns"
               :key="todo.title"
               class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4"
             >
@@ -259,7 +253,7 @@ const domainBoards = [
                 {{ todo.owner }}
               </p>
               <p class="mt-2 text-sm text-toned">
-                截止 {{ todo.dueAt }}
+                创建于 {{ todo.dueAt }}
               </p>
             </div>
           </div>

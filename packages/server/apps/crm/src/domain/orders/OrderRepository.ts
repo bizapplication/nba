@@ -13,7 +13,7 @@ export interface OrderRepository {
     options: OrderQueryOptions,
   ): Promise<{ data: OrderProps[]; total: number }>;
   findById(id: string): Promise<OrderProps | null>;
-  create(input: Omit<OrderProps, 'id' | 'createdAt' | 'updatedAt' | 'isdelete'>): Promise<OrderProps>;
+  create(input: Omit<OrderProps, 'id' | 'createdAt' | 'updatedAt' | 'isdelete' | 'customerName'>): Promise<OrderProps>;
   updateById(
     id: string,
     input: Partial<Pick<OrderProps, 'orderNo' | 'customerId' | 'name' | 'description' | 'amount' | 'status'>>,

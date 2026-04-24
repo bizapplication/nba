@@ -11,6 +11,7 @@ function toDomain(entity: OpportunityORM): OpportunityProps {
   return {
     id: entity.id,
     customerId: entity.customerId,
+    customerName: entity.customer?.name ?? null,
     title: entity.title,
     description: entity.description,
     amount: Number(entity.amount),
@@ -35,6 +36,7 @@ export class TypeORMOpportunityRepository implements OpportunityRepository {
   ): Promise<{ data: OpportunityProps[]; total: number }> {
     const qb = this.repository.createQueryBuilder('opportunity');
 
+    qb.leftJoinAndSelect('opportunity.customer', 'customer', 'customer.isdelete = false');
     qb.where('opportunity.isdelete = :isdelete', { isdelete: condition.isdelete ?? false });
 
     if (condition.id) qb.andWhere('opportunity.id = :id', { id: condition.id });
@@ -68,12 +70,12 @@ export class TypeORMOpportunityRepository implements OpportunityRepository {
   }
 
   async findById(id: string): Promise<OpportunityProps | null> {
-    const row = await this.repository.findOne({ where: { id } });
+    const row = await this.repository.findOne({ where: { id }, relations: { customer: true } });
     return row ? toDomain(row) : null;
   }
 
   async create(
-    input: Omit<OpportunityProps, 'id' | 'createdAt' | 'updatedAt' | 'isdelete'>,
+    input: Omit<OpportunityProps, 'id' | 'createdAt' | 'updatedAt' | 'isdelete' | 'customerName'>,
   ): Promise<OpportunityProps> {
     const entity = this.repository.create({
       customerId: input.customerId,
@@ -86,7 +88,8 @@ export class TypeORMOpportunityRepository implements OpportunityRepository {
     });
 
     const saved = await this.repository.save(entity);
-    return toDomain(saved);
+    const created = await this.repository.findOneOrFail({ where: { id: saved.id }, relations: { customer: true } });
+    return toDomain(created);
   }
 
   async updateById(
@@ -103,7 +106,7 @@ export class TypeORMOpportunityRepository implements OpportunityRepository {
       .andWhere('isdelete = :isdelete', { isdelete: false })
       .execute();
 
-    const updated = await this.repository.findOne({ where: { id, isdelete: false } });
+    const updated = await this.repository.findOne({ where: { id, isdelete: false }, relations: { customer: true } });
     return updated ? toDomain(updated) : null;
   }
 

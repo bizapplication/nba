@@ -2,7 +2,14 @@
   "name": "nba",
   "private": true,
   "scripts": {
+    "demo:doctor": "node --env-file=.env --experimental-strip-types scripts/demo-doctor.ts",
+    "demo:setup": "node --env-file=.env --experimental-strip-types scripts/demo-setup.ts",
+    "demo:start": "node --env-file=.env --experimental-strip-types scripts/demo-start.ts",
+    "demo:stop": "node --env-file=.env --experimental-strip-types scripts/demo-stop.ts",
+    "demo:seed": "node --env-file=.env --experimental-strip-types scripts/demo-seed.ts",
     "dev:web": "pnpm --filter @nba/web dev",
+    "dev:crm:web": "bash ./scripts/dev-crm-web.sh",
+    "seed:crm:demo": "pnpm --filter @nba/crm seed:demo",
     "dev:desktop": "pnpm --filter @nba/desktop dev",
     "dev:server": "pnpm --filter @nba/platform dev && pnpm --filter @nba/agent dev && pnpm --filter @nba/crm dev && pnpm --filter @nba/erp dev",
     "dev:cli": "pnpm --filter @nba/cli dev",
@@ -15,7 +22,7 @@
     "typecheck": "pnpm --filter '*' typecheck"
   },
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=24.0.0",
     "pnpm": ">=9.0.0",
     "bun": ">=1.0.0"
   }

@@ -1,11 +1,20 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { CustomerORM } from './CustomerORM';
 
 @Entity({ name: 'opportunities' })
 export class OpportunityORM {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'varchar', length: 80 })
+  @Column({ type: 'uuid' })
   customerId!: string;
 
   @Column({ type: 'varchar', length: 160 })
@@ -31,4 +40,8 @@ export class OpportunityORM {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
+
+  @ManyToOne(() => CustomerORM, (customer) => customer.opportunities, { nullable: false })
+  @JoinColumn({ name: 'customerId' })
+  customer?: CustomerORM;
 }

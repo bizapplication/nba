@@ -13,25 +13,25 @@ const routeMeta = [
   {
     prefix: '/home/chat',
     label: 'Agent 会话',
-    subtitle: '查看单条 run 的消息流、关联文件和输出摘要；当前仍为 UI-only 演示语义。',
+    subtitle: '查看单条 run 的真实消息流、审批动作、附件和执行结果。',
     icon: 'i-lucide-messages-square'
   },
   {
     prefix: '/home/workspace',
     label: '任务工作区',
-    subtitle: '给操作者继续处理 run、历史对话、附件与输出草稿的地方。',
+    subtitle: '给操作者继续处理 run、审批卡、历史对话与附件的地方。',
     icon: 'i-lucide-layout-dashboard'
   },
   {
     prefix: '/home/dashboard',
     label: '经营看板',
-    subtitle: '给老板和管理层快速查看经营摘要、风险、待办与状态快照的地方。',
+    subtitle: '给老板和管理层快速查看本地 demo 运行状态、风险与待办快照的地方。',
     icon: 'i-lucide-chart-column-big'
   },
   {
     prefix: '/home',
     label: '主页',
-    subtitle: '聊天优先的 Agent 工作台首页，负责发起任务，不假装真实 AI 已经接通。',
+    subtitle: '聊天优先的 Agent 工作台首页，已经接通 OpenClaw sidecar 与真实业务 API。',
     icon: 'i-lucide-house'
   },
   {
@@ -66,8 +66,8 @@ const routeMeta = [
   },
   {
     prefix: '/crm',
-    label: 'CRM 对照入口',
-    subtitle: '该入口作为并列域对照页保留，不承担当前 ERP 团队的正式验收职责。',
+    label: '客户关系管理',
+    subtitle: '独立 CRM 域负责客户、商机与订单链路，前后端通过独立服务和数据库联调。',
     icon: 'i-lucide-rocket'
   },
   {
@@ -101,7 +101,13 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => [
   {
     label: '客户关系管理',
     icon: 'i-lucide-users',
-    to: '/erp/crm'
+    defaultOpen: true,
+    children: [
+      { label: 'CRM 首页', icon: 'i-lucide-layout-dashboard', to: '/crm' },
+      { label: '客户管理', icon: 'i-lucide-users', to: '/crm/customers' },
+      { label: '商机管理', icon: 'i-lucide-badge-dollar-sign', to: '/crm/opportunities' },
+      { label: '订单管理', icon: 'i-lucide-file-text', to: '/crm/orders' }
+    ]
   },
   {
     label: '企业资源计划',
@@ -173,9 +179,12 @@ const searchGroups = computed(() => [
   },
   {
     id: 'crm',
-    label: '客户关系管理（并列域）',
+    label: '客户关系管理',
     items: [
-      { label: '客户关系管理入口', icon: 'i-lucide-users', to: '/erp/crm' }
+      { label: 'CRM 首页', icon: 'i-lucide-layout-dashboard', to: '/crm' },
+      { label: '客户管理', icon: 'i-lucide-users', to: '/crm/customers' },
+      { label: '商机管理', icon: 'i-lucide-badge-dollar-sign', to: '/crm/opportunities' },
+      { label: '订单管理', icon: 'i-lucide-file-text', to: '/crm/orders' }
     ]
   },
   {

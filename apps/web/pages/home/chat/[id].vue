@@ -1,17 +1,30 @@
 <script setup lang="ts">
-import type { HomeAttachment, HomeChatMessage } from '~/types/home'
+import type { HomeAttachment, HomeChatMessage, HomeActionRequest } from '~/types/home'
+
+definePageMeta({
+  middleware: 'home-auth'
+})
 
 const route = useRoute()
-const { getThread } = useHomeWorkspace()
+const {
+  approveAction,
+  ensureThread,
+  rejectAction,
+  sendMessage
+} = useHomeWorkspace()
 
 const runId = computed(() => {
   const value = route.params.id
   return (Array.isArray(value) ? value[0] : value) ?? ''
 })
 
-const thread = computed(() => {
-  return getThread(runId.value)
-})
+const thread = ref<Awaited<ReturnType<typeof ensureThread>> | null>(null)
+const followupPrompt = ref('')
+const followupFiles = ref<File[]>([])
+const followupInput = ref<HTMLInputElement | null>(null)
+const actionPendingId = ref('')
+
+thread.value = await ensureThread(runId.value)
 
 function attachmentIcon(type: HomeAttachment['type']) {
   switch (type) {
@@ -47,6 +60,71 @@ function messageLabel(role: HomeChatMessage['role']) {
       return 'System'
   }
 }
+
+function actionTone(action: HomeActionRequest) {
+  if (action.status === 'completed') {
+    return 'border-success/20 bg-success/5'
+  }
+
+  if (action.status === 'failed' || action.status === 'rejected') {
+    return 'border-error/20 bg-error/5'
+  }
+
+  return 'border-warning/20 bg-warning/5'
+}
+
+function openFollowupPicker() {
+  followupInput.value?.click()
+}
+
+function onFollowupFiles(event: Event) {
+  const target = event.target as HTMLInputElement
+
+  if (!target.files?.length) {
+    return
+  }
+
+  followupFiles.value = [...followupFiles.value, ...Array.from(target.files)]
+  target.value = ''
+}
+
+async function submitFollowup() {
+  if (!thread.value || !followupPrompt.value.trim()) {
+    return
+  }
+
+  thread.value = await sendMessage(thread.value.id, followupPrompt.value, followupFiles.value)
+  followupPrompt.value = ''
+  followupFiles.value = []
+}
+
+async function approve(requestId: string) {
+  if (!thread.value) {
+    return
+  }
+
+  actionPendingId.value = requestId
+
+  try {
+    thread.value = await approveAction(thread.value.id, requestId)
+  } finally {
+    actionPendingId.value = ''
+  }
+}
+
+async function reject(requestId: string) {
+  if (!thread.value) {
+    return
+  }
+
+  actionPendingId.value = requestId
+
+  try {
+    thread.value = await rejectAction(thread.value.id, requestId)
+  } finally {
+    actionPendingId.value = ''
+  }
+}
 </script>
 
 <template>
@@ -78,7 +156,7 @@ function messageLabel(role: HomeChatMessage['role']) {
                 当前 run 状态
               </p>
               <p class="text-xs leading-6 text-muted">
-                这页只展示单条会话详情，仍然是前端 mock 语义。
+                这页会展示真实消息流、审批动作和附件。
               </p>
             </div>
           </template>
@@ -95,10 +173,10 @@ function messageLabel(role: HomeChatMessage['role']) {
 
             <div class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4">
               <p class="text-xs uppercase tracking-[0.22em] text-muted">
-                创建时间
+                附件
               </p>
               <p class="mt-2 text-sm font-semibold text-highlighted">
-                {{ thread.createdAt }}
+                {{ thread.attachmentCount }} 份
               </p>
             </div>
 
@@ -123,7 +201,7 @@ function messageLabel(role: HomeChatMessage['role']) {
               对话消息流
             </h3>
             <p class="text-sm leading-6 text-muted">
-              当前只展示 mock message 列表，不做流式输出或持久化轮询。
+              只读阶段会直接返回答复；文件、命令、浏览器动作会先转成审批卡。
             </p>
           </div>
         </template>
@@ -145,6 +223,51 @@ function messageLabel(role: HomeChatMessage['role']) {
             <p class="mt-3 whitespace-pre-line text-sm leading-7 text-toned">
               {{ message.content }}
             </p>
+          </div>
+        </div>
+
+        <div class="mt-6 space-y-4 rounded-[1.5rem] border border-default/70 bg-default/20 px-4 py-4">
+          <div class="space-y-2">
+            <p class="text-sm font-semibold text-highlighted">
+              继续追问
+            </p>
+            <p class="text-xs leading-6 text-muted">
+              继续走只读链路；如果涉及文件、命令或浏览器动作，会再次生成审批请求。
+            </p>
+          </div>
+
+          <UTextarea
+            v-model="followupPrompt"
+            :rows="4"
+            autoresize
+            placeholder="继续追问，或要求生成新的审批动作。"
+          />
+
+          <input
+            ref="followupInput"
+            type="file"
+            multiple
+            class="hidden"
+            @change="onFollowupFiles"
+          >
+
+          <div v-if="followupFiles.length" class="flex flex-wrap gap-2">
+            <div
+              v-for="file in followupFiles"
+              :key="`${file.name}-${file.size}-${file.lastModified}`"
+              class="rounded-full border border-default/70 bg-white/80 px-3 py-2 text-xs text-toned"
+            >
+              {{ file.name }}
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <UButton color="neutral" variant="soft" icon="i-lucide-paperclip" @click="openFollowupPicker">
+              添加文件
+            </UButton>
+            <UButton color="primary" icon="i-lucide-arrow-up-right" @click="submitFollowup">
+              发送追问
+            </UButton>
           </div>
         </div>
       </UCard>
@@ -171,10 +294,78 @@ function messageLabel(role: HomeChatMessage['role']) {
           <template #header>
             <div class="space-y-1">
               <h3 class="text-lg font-semibold text-highlighted">
+                审批动作
+              </h3>
+              <p class="text-sm leading-6 text-muted">
+                文件修改、命令执行、浏览器自动化都会先出现在这里，只有审批通过才会继续执行。
+              </p>
+            </div>
+          </template>
+
+          <div class="space-y-3">
+            <div
+              v-for="action in thread.actionRequests"
+              :key="action.id"
+              :class="['rounded-2xl border px-4 py-4', actionTone(action)]"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-highlighted">
+                    {{ action.title }}
+                  </p>
+                  <p class="mt-2 text-sm leading-6 text-toned">
+                    {{ action.summary }}
+                  </p>
+                  <p v-if="action.target" class="mt-2 text-xs text-muted">
+                    目标 {{ action.target }}
+                  </p>
+                  <p v-if="action.resultSummary" class="mt-2 text-xs leading-6 text-toned">
+                    {{ action.resultSummary }}
+                  </p>
+                  <p v-if="action.errorMessage" class="mt-2 text-xs leading-6 text-error">
+                    {{ action.errorMessage }}
+                  </p>
+                </div>
+                <UBadge color="neutral" variant="subtle">
+                  {{ action.status }}
+                </UBadge>
+              </div>
+
+              <div v-if="action.status === 'pending'" class="mt-4 flex flex-wrap gap-3">
+                <UButton
+                  color="primary"
+                  size="sm"
+                  :loading="actionPendingId === action.id"
+                  @click="approve(action.id)"
+                >
+                  审批并执行
+                </UButton>
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  size="sm"
+                  :loading="actionPendingId === action.id"
+                  @click="reject(action.id)"
+                >
+                  拒绝
+                </UButton>
+              </div>
+            </div>
+
+            <div v-if="!thread.actionRequests.length" class="rounded-2xl border border-dashed border-default/70 bg-default/10 px-4 py-6 text-sm leading-6 text-muted">
+              当前还没有审批动作。
+            </div>
+          </div>
+        </UCard>
+
+        <UCard class="rounded-[1.75rem] border border-default/70">
+          <template #header>
+            <div class="space-y-1">
+              <h3 class="text-lg font-semibold text-highlighted">
                 关联文件
               </h3>
               <p class="text-sm leading-6 text-muted">
-                这里展示挂在当前 run 上的 mock 文件列表。
+                文件会保存在本地 `demo-files/uploads`，并跟随当前 run 展示。
               </p>
             </div>
           </template>
@@ -199,33 +390,9 @@ function messageLabel(role: HomeChatMessage['role']) {
                 </div>
               </div>
             </div>
-          </div>
-        </UCard>
 
-        <UCard class="rounded-[1.75rem] border border-default/70">
-          <template #header>
-            <div class="space-y-1">
-              <h3 class="text-lg font-semibold text-highlighted">
-                相关输出概览
-              </h3>
-              <p class="text-sm leading-6 text-muted">
-                当前不生成真实报告，只用稳定假数据表达输出形态。
-              </p>
-            </div>
-          </template>
-
-          <div class="space-y-3">
-            <div
-              v-for="output in thread.outputs"
-              :key="output.id"
-              class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4"
-            >
-              <p class="text-sm font-semibold text-highlighted">
-                {{ output.label }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-toned">
-                {{ output.description }}
-              </p>
+            <div v-if="!thread.attachments.length" class="rounded-2xl border border-dashed border-default/70 bg-default/10 px-4 py-6 text-sm leading-6 text-muted">
+              当前 run 没有附件。
             </div>
           </div>
         </UCard>
@@ -241,7 +408,7 @@ function messageLabel(role: HomeChatMessage['role']) {
             找不到这条会话
           </p>
           <p class="text-sm leading-6 text-toned">
-            当前会话只保存在前端 mock 状态中。如果你刚刷新了页面，之前临时创建的 run 可能已经不在本地状态里。
+            这条 run 可能不存在，或者当前缓存尚未加载完成。
           </p>
         </div>
 

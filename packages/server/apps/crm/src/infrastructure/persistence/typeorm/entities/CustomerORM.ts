@@ -1,4 +1,13 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { OpportunityORM } from './OpportunityORM';
+import { OrderORM } from './OrderORM';
 
 @Entity({ name: 'customers' })
 export class CustomerORM {
@@ -25,4 +34,10 @@ export class CustomerORM {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
+
+  @OneToMany(() => OpportunityORM, (opportunity) => opportunity.customer)
+  opportunities?: OpportunityORM[];
+
+  @OneToMany(() => OrderORM, (order) => order.customer)
+  orders?: OrderORM[];
 }

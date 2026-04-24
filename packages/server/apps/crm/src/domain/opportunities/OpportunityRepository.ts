@@ -13,7 +13,9 @@ export interface OpportunityRepository {
     options: OpportunityQueryOptions,
   ): Promise<{ data: OpportunityProps[]; total: number }>;
   findById(id: string): Promise<OpportunityProps | null>;
-  create(input: Omit<OpportunityProps, 'id' | 'createdAt' | 'updatedAt' | 'isdelete'>): Promise<OpportunityProps>;
+  create(
+    input: Omit<OpportunityProps, 'id' | 'createdAt' | 'updatedAt' | 'isdelete' | 'customerName'>,
+  ): Promise<OpportunityProps>;
   updateById(
     id: string,
     input: Partial<

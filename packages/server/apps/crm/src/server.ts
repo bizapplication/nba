@@ -1,8 +1,9 @@
 import { createApp } from './app';
-import { AppDataSource } from './infrastructure/persistence/typeorm/data-source';
+import { AppDataSource, ensureDatabaseReady } from './infrastructure/persistence/typeorm/data-source';
 import { env } from './shared/config/env';
 
 async function bootstrap() {
+  await ensureDatabaseReady();
   await AppDataSource.initialize();
   const app = createApp(AppDataSource);
 

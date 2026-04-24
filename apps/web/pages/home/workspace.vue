@@ -1,37 +1,24 @@
 <script setup lang="ts">
-import type { HomeAttachment } from '~/types/home'
+definePageMeta({
+  middleware: 'home-auth'
+})
 
 const {
-  getThread,
+  ensureThread,
   orderedRuns,
-  setPrompt,
-  workflowShortcuts,
-  workspaceChats,
-  workspaceFiles,
-  workspaceReports
+  pendingActionRequests,
+  promptGroups,
+  refreshRuns,
+  setPrompt
 } = useHomeWorkspace()
 
+await refreshRuns()
+
+for (const run of orderedRuns.value.slice(0, 4)) {
+  await ensureThread(run.id)
+}
+
 const latestRun = computed(() => orderedRuns.value[0] ?? null)
-const latestThread = computed(() => latestRun.value ? getThread(latestRun.value.id) : null)
-
-function attachmentIcon(type: HomeAttachment['type']) {
-  switch (type) {
-    case 'sheet':
-      return 'i-lucide-sheet'
-    case 'image':
-      return 'i-lucide-image'
-    case 'brief':
-      return 'i-lucide-file-pen-line'
-    default:
-      return 'i-lucide-file-text'
-  }
-}
-
-function latestAssistantSummary(runId: string) {
-  const thread = getThread(runId)
-  const message = [...(thread?.messages ?? [])].reverse().find((item) => item.role === 'assistant')
-  return message?.content ?? '当前还没有更多输出摘要。'
-}
 
 async function startWorkflow(prompt: string) {
   setPrompt(prompt)
@@ -55,10 +42,10 @@ async function startWorkflow(prompt: string) {
 
           <div class="space-y-3">
             <h2 class="text-3xl font-semibold leading-tight text-highlighted sm:text-4xl">
-              任务工作区是给操作者继续处理 run、历史对话、附件和输出的地方。
+              任务工作区是给操作者继续处理 run、审批卡、历史对话和附件的地方。
             </h2>
             <p class="max-w-3xl text-sm leading-7 text-toned sm:text-base">
-              这里负责承接首页发起后的继续处理。最近任务、历史对话、附件、报告草稿和输出都集中在这里，再按需要进入单条 chat 详情。
+              这里承接首页发起后的继续处理。最近任务和待审批动作都会先汇总在这里，方便你快速判断下一步是继续追问、放行动作，还是回到首页发起新任务。
             </p>
           </div>
         </div>
@@ -70,7 +57,7 @@ async function startWorkflow(prompt: string) {
                 继续处理当前 run
               </p>
               <p class="text-xs leading-6 text-muted">
-                首页发起后第一时间回到这里，方便继续处理 run、附件和输出，而不是只看摘要。
+                最近一条 run 的摘要会显示在这里，方便你直接跳回会话页。
               </p>
             </div>
           </template>
@@ -94,7 +81,7 @@ async function startWorkflow(prompt: string) {
             </div>
 
             <div class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4 text-sm leading-6 text-toned">
-              {{ latestThread?.promptPreview }}
+              {{ latestRun.promptPreview }}
             </div>
 
             <div class="flex flex-wrap gap-3">
@@ -118,7 +105,7 @@ async function startWorkflow(prompt: string) {
               最近任务 / 最近 run
             </h3>
             <p class="text-sm leading-6 text-muted">
-              当前主列表继续围绕 run 组织，不在这里展开完整消息流，方便操作者先决定下一步。
+              主列表围绕真实 run 组织，打开后会看到消息流、附件和审批动作。
             </p>
           </div>
         </template>
@@ -165,134 +152,70 @@ async function startWorkflow(prompt: string) {
           </template>
 
           <div class="space-y-3">
-            <button
-              v-for="workflow in workflowShortcuts"
-              :key="workflow.title"
-              type="button"
-              class="w-full rounded-2xl border border-default/70 bg-default/20 px-4 py-4 text-left transition hover:border-primary/30 hover:bg-primary/5"
-              @click="startWorkflow(workflow.prompt)"
+            <div
+              v-for="group in promptGroups"
+              :key="group.title"
+              class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4"
             >
               <p class="text-sm font-semibold text-highlighted">
-                {{ workflow.title }}
+                {{ group.title }}
               </p>
-              <p class="mt-2 text-sm leading-6 text-toned">
-                {{ workflow.description }}
-              </p>
-            </button>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <UButton
+                  v-for="preset in group.presets"
+                  :key="preset.id"
+                  color="neutral"
+                  variant="soft"
+                  size="sm"
+                  @click="startWorkflow(preset.prompt)"
+                >
+                  {{ preset.label }}
+                </UButton>
+              </div>
+            </div>
           </div>
         </UCard>
 
         <UCard class="rounded-[1.75rem] border border-default/70">
-        <template #header>
-          <div class="space-y-1">
-            <h3 class="text-lg font-semibold text-highlighted">
-              最近聊天
-            </h3>
-            <p class="text-sm leading-6 text-muted">
-              这里承接历史对话入口，方便继续回到某条 run，而不等同于完整 chat 页面。
-            </p>
-          </div>
-        </template>
+          <template #header>
+            <div class="space-y-1">
+              <h3 class="text-lg font-semibold text-highlighted">
+                待审批动作
+              </h3>
+              <p class="text-sm leading-6 text-muted">
+                文件修改、命令执行和浏览器自动化会先汇总到这里，只有审批通过才会继续执行。
+              </p>
+            </div>
+          </template>
 
           <div class="space-y-3">
-            <NuxtLink
-              v-for="chat in workspaceChats"
-              :key="chat.id"
-              :to="`/home/chat/${chat.id}`"
-              class="block rounded-2xl border border-default/70 bg-default/20 px-4 py-4 transition hover:border-primary/30 hover:bg-primary/5"
+            <div
+              v-for="action in pendingActionRequests"
+              :key="action.id"
+              class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4"
             >
-              <div class="space-y-2">
-                <div class="flex items-start justify-between gap-3">
-                  <p class="text-sm font-semibold text-highlighted">
-                    {{ chat.title }}
-                  </p>
-                  <HomeRunStatusBadge :status="chat.status" />
-                </div>
-                <p class="line-clamp-3 text-xs leading-6 text-toned">
-                  {{ latestAssistantSummary(chat.id) }}
-                </p>
+              <p class="text-sm font-semibold text-highlighted">
+                {{ action.title }}
+              </p>
+              <p class="mt-2 text-sm leading-6 text-toned">
+                {{ action.summary }}
+              </p>
+              <p class="mt-2 text-xs text-muted">
+                来源 {{ action.runTitle }}
+              </p>
+              <div class="mt-3">
+                <UButton :to="`/home/chat/${action.runId}`" color="primary" size="sm">
+                  打开会话
+                </UButton>
               </div>
-            </NuxtLink>
+            </div>
+
+            <div v-if="!pendingActionRequests.length" class="rounded-2xl border border-dashed border-default/70 bg-default/10 px-4 py-6 text-sm leading-6 text-muted">
+              当前没有待审批动作。
+            </div>
           </div>
         </UCard>
       </div>
-    </div>
-
-    <div class="grid gap-4 xl:grid-cols-2">
-      <UCard class="rounded-[1.75rem] border border-default/70">
-        <template #header>
-          <div class="space-y-1">
-            <h3 class="text-lg font-semibold text-highlighted">
-              最近文件处理
-            </h3>
-            <p class="text-sm leading-6 text-muted">
-              附件只保留在前端状态中，但不同页面共享同一套最小语义。
-            </p>
-          </div>
-        </template>
-
-        <div class="grid gap-3 md:grid-cols-2">
-          <div
-            v-for="file in workspaceFiles"
-            :key="file.id"
-            class="rounded-2xl border border-default/70 bg-default/20 px-4 py-4"
-          >
-            <div class="flex items-start gap-3">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <UIcon :name="attachmentIcon(file.type)" class="size-5" />
-              </div>
-              <div class="min-w-0">
-                <p class="truncate text-sm font-semibold text-highlighted">
-                  {{ file.name }}
-                </p>
-                <p class="mt-1 text-xs text-muted">
-                  {{ file.sizeLabel }}
-                </p>
-                <p class="mt-2 text-xs leading-6 text-toned">
-                  来自 {{ file.runTitle }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </UCard>
-
-      <UCard class="rounded-[1.75rem] border border-default/70">
-        <template #header>
-          <div class="space-y-1">
-            <h3 class="text-lg font-semibold text-highlighted">
-              最近报告 / 草稿
-            </h3>
-            <p class="text-sm leading-6 text-muted">
-              输出摘要在 workspace 汇总展示，详细上下文再进入具体会话页。
-            </p>
-          </div>
-        </template>
-
-        <div class="space-y-3">
-          <NuxtLink
-            v-for="report in workspaceReports"
-            :key="report.id"
-            :to="`/home/chat/${report.runId}`"
-            class="block rounded-2xl border border-default/70 bg-default/20 px-4 py-4 transition hover:border-primary/30 hover:bg-primary/5"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="text-sm font-semibold text-highlighted">
-                  {{ report.label }}
-                </p>
-                <p class="mt-2 text-sm leading-6 text-toned">
-                  {{ report.description }}
-                </p>
-                <p class="mt-2 text-xs text-muted">
-                  来源 {{ report.runTitle }}
-                </p>
-              </div>
-              <UIcon name="i-lucide-arrow-up-right" class="mt-1 size-4 shrink-0 text-muted" />
-            </div>
-          </NuxtLink>
-        </div>
-      </UCard>
     </div>
   </div>
 </template>

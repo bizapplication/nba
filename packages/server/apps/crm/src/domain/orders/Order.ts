@@ -4,6 +4,7 @@ export interface OrderProps {
   id: string;
   orderNo: string;
   customerId: string;
+  customerName: string | null;
   name: string;
   description: string;
   amount: number;
