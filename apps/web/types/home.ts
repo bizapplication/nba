@@ -1,8 +1,6 @@
 export type HomeRunStatus = 'queued' | 'running' | 'completed' | 'blocked'
 export type HomeAttachmentType = 'document' | 'sheet' | 'image' | 'brief'
 export type HomeMessageRole = 'system' | 'user' | 'assistant'
-export type HomeActionKind = 'file' | 'command' | 'browser'
-export type HomeActionStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'failed'
 
 export interface HomeRun {
   id: string
@@ -11,6 +9,7 @@ export interface HomeRun {
   model: string
   promptPreview: string
   createdAt: string
+  updatedAt: string
   attachmentCount: number
   summary: string
 }
@@ -35,32 +34,18 @@ export interface HomeChatOutput {
   description: string
 }
 
-export interface HomeActionRequest {
-  id: string
-  kind: HomeActionKind
-  status: HomeActionStatus
-  title: string
-  summary: string
-  target: string | null
-  requestedAt: string
-  updatedAt: string
-  resultSummary: string | null
-  errorMessage: string | null
-  payload: Record<string, unknown>
-}
-
 export interface HomeChatThread {
-  id: string
+  runId: string
   title: string
   status: HomeRunStatus
   model: string
   createdAt: string
+  updatedAt: string
   promptPreview: string
   summary: string
-  attachmentCount: number
   attachments: HomeAttachment[]
   messages: HomeChatMessage[]
-  actionRequests: HomeActionRequest[]
+  outputs: HomeChatOutput[]
 }
 
 export interface HomeModelOption {
