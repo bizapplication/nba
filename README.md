@@ -193,10 +193,70 @@ ERP MCP Server ────────────── ERP 业务逻辑
 
 ### 环境要求
 
-- **Node.js** >= 20.0.0
+- **Node.js** >= 24.0.0
 - **pnpm** >= 9.0.0
+- **git** >= 2.39
+- **Docker Desktop**（本地 Demo 使用 PostgreSQL）
 - **Bun** >= 1.0.0（用于 CLI）
 - **Rust** >= 1.70.0（用于 Tauri）
+
+### macOS 本地 OpenClaw Demo
+
+这套仓库现在支持一条面向 **macOS 本地演示** 的启动链路：Web `/home` 会接通本地 Platform、Agent API、CRM、ERP 和项目自带的 OpenClaw sidecar。登录后即可演示真实 run、审批卡、本地文件操作和浏览器动作。
+
+```bash
+cp .env.example .env
+pnpm demo:setup
+pnpm demo:start
+```
+
+默认路径：
+
+- 不需要预装 OpenClaw；`demo:setup` 会把固定版本的 OpenClaw sidecar 安装到 `.runtime/openclaw/`
+- 不依赖你本机已有的 OpenClaw 配置；项目自己的状态隔离在 `.runtime/openclaw-home/`
+- PostgreSQL 默认由 `database/docker-compose.yml` 拉起；只有在你显式提供本地库时才会走回退
+- 新机器默认只需要补一项必填配置：`DEEPSEEK_API_KEY`
+
+默认约束：
+
+- 仅支持 **macOS**
+- 默认使用 `DEEPSEEK_API_KEY + deepseek/deepseek-v4-flash`
+- 如需改用 OpenAI，可把 `OPENCLAW_DEMO_MODEL` 切到 `openai/gpt-5.4` 并填入 `OPENAI_API_KEY`
+- `OPENCLAW_GATEWAY_TOKEN` 在 `.env.example` 里已经给了 demo 默认值，也可以自行替换
+- OpenClaw 运行时会放在 `.runtime/openclaw/`，由本仓库脚本管理
+- OpenClaw 本地状态会隔离在 `.runtime/openclaw-home/`
+- 平台和 Agent 的持久化数据会放在 `.data/`
+- 上传附件会落到 `demo-files/uploads/`
+- `OPENCLAW_USE_GLOBAL_CLI` / `OPENCLAW_AUTH_SOURCE_HOME` 只是本地开发回退，不是 clone 后开箱路径
+- 第一次触发 AI 对话时，OpenClaw 会预热并按需安装部分 provider/runtime 依赖，首轮响应会比后续慢
+
+常用命令：
+
+```bash
+# 环境预检查
+pnpm demo:doctor
+
+# 初始化 OpenClaw sidecar、本地数据库和演示数据
+pnpm demo:setup
+
+# 启动 OpenClaw + Platform + Agent + CRM + ERP + Web
+pnpm demo:start
+
+# 重新灌入 CRM 演示数据
+pnpm demo:seed
+
+# 停掉本地 Demo 相关进程
+pnpm demo:stop
+```
+
+默认端口：
+
+- Web: `http://127.0.0.1:3000`
+- CRM API: `http://127.0.0.1:3002`
+- Platform: `http://127.0.0.1:3003`
+- Agent API: `http://127.0.0.1:3004`
+- ERP: `http://127.0.0.1:3101`
+- OpenClaw Gateway: `http://127.0.0.1:18789`
 
 ### 安装依赖
 
@@ -210,6 +270,16 @@ pnpm install
 # 启动 Web 应用
 pnpm dev:web
 
+# 启动 macOS 本地 OpenClaw Demo
+pnpm demo:setup
+pnpm demo:start
+
+# 一键启动 CRM Web 联调环境（PostgreSQL + CRM API + Web）
+pnpm dev:crm:web
+
+# 向 CRM 注入演示数据
+pnpm seed:crm:demo
+
 # 启动桌面应用
 pnpm dev:desktop
 
@@ -219,6 +289,16 @@ pnpm dev:server
 # 启动 CLI 工具
 pnpm dev:cli
 ```
+
+`pnpm dev:crm:web` 默认会把 CRM 联调环境起在：
+
+- Web: `http://127.0.0.1:3000/crm`
+- CRM API: `http://127.0.0.1:3002`
+- PostgreSQL: `127.0.0.1:5433`
+
+如需切换端口或数据库连接，可在启动前覆盖 `WEB_PORT`、`CRM_PORT`、`CRM_DB_PORT`、`CRM_DB_USER` 等环境变量。
+
+`pnpm seed:crm:demo` 使用同一组 `CRM_DB_*` 环境变量，适合在本地 CRM 数据库里快速补齐客户、商机、订单演示数据。
 
 ### 构建
 

@@ -1,124 +1,221 @@
-<template>
-  <div class="min-h-screen flex flex-col">
-    <!-- 顶部导航栏 -->
-    <header class="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/80 backdrop-blur">
-      <UContainer>
-        <div class="flex h-16 items-center justify-between">
-          <!-- Logo -->
-          <div class="flex items-center gap-2">
-            <NuxtLink to="/" class="flex items-center gap-2 text-xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
-              <UIcon name="i-heroicons-cube" class="w-8 h-8" />
-              <span>NBA</span>
-            </NuxtLink>
-          </div>
-
-          <!-- 导航菜单 -->
-          <nav class="hidden md:flex items-center gap-6">
-            <NuxtLink
-              v-for="item in navigation"
-              :key="item.path"
-              :to="item.path"
-              class="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              active-class="text-blue-600 dark:text-blue-400 font-medium"
-            >
-              <UIcon :name="item.icon" class="w-5 h-5" />
-              <span>{{ item.label }}</span>
-            </NuxtLink>
-          </nav>
-
-          <!-- 右侧操作区 -->
-          <div class="flex items-center gap-4">
-            <!-- 主题切换 -->
-            <UButton
-              :icon="isDark ? 'i-heroicons-sun' : 'i-heroicons-moon'"
-              color="gray"
-              variant="ghost"
-              size="sm"
-              @click="toggleColorMode"
-            />
-
-            <!-- 移动端菜单按钮 -->
-            <UButton
-              icon="i-heroicons-bars-3"
-              color="gray"
-              variant="ghost"
-              size="sm"
-              class="md:hidden"
-              @click="mobileMenuOpen = !mobileMenuOpen"
-            />
-          </div>
-        </div>
-
-        <!-- 移动端菜单 -->
-        <div
-          v-if="mobileMenuOpen"
-          class="md:hidden py-4 border-t border-gray-200 dark:border-gray-800"
-        >
-          <nav class="flex flex-col gap-2">
-            <NuxtLink
-              v-for="item in navigation"
-              :key="item.path"
-              :to="item.path"
-              class="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              active-class="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-              @click="mobileMenuOpen = false"
-            >
-              <UIcon :name="item.icon" class="w-5 h-5" />
-              <span>{{ item.label }}</span>
-            </NuxtLink>
-          </nav>
-        </div>
-      </UContainer>
-    </header>
-
-    <!-- 主内容区域 -->
-    <main class="flex-1">
-      <slot />
-    </main>
-
-    <!-- 页脚 -->
-    <footer class="bg-gray-900 text-white py-8 mt-auto">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <p class="text-gray-400">
-          © {{ currentYear }} NBA - 下一代业务应用. All rights reserved.
-        </p>
-      </div>
-    </footer>
-  </div>
-</template>
-
 <script setup lang="ts">
-const colorMode = useColorMode()
-const mobileMenuOpen = ref(false)
+import type { NavigationMenuItem } from '@nuxt/ui'
 
-const isDark = computed(() => colorMode.value === 'dark')
+const route = useRoute()
+const open = ref(false)
+const collapsed = ref(false)
 
-const navigation = [
+const primaryLinks = computed<NavigationMenuItem[]>(() => [
   {
-    label: '首页',
-    path: '/',
-    icon: 'i-heroicons-home'
+    label: '主页',
+    icon: 'i-lucide-house',
+    defaultOpen: true,
+    children: [
+      { label: 'Agent 首页', icon: 'i-lucide-sparkles', to: '/home' },
+      { label: '经营看板', icon: 'i-lucide-chart-column-big', to: '/home/dashboard' },
+      { label: '任务工作区', icon: 'i-lucide-layout-dashboard', to: '/home/workspace' }
+    ]
   },
   {
-    label: 'ERP',
-    path: '/erp',
-    icon: 'i-heroicons-building-office-2'
+    label: '客户关系管理',
+    icon: 'i-lucide-users',
+    defaultOpen: true,
+    children: [
+      { label: 'CRM 首页', icon: 'i-lucide-layout-dashboard', to: '/crm' },
+      { label: '客户管理', icon: 'i-lucide-users', to: '/crm/customers' },
+      { label: '商机管理', icon: 'i-lucide-badge-dollar-sign', to: '/crm/opportunities' },
+      { label: '订单管理', icon: 'i-lucide-file-text', to: '/crm/orders' }
+    ]
   },
   {
-    label: 'CRM',
-    path: '/crm',
-    icon: 'i-heroicons-users'
+    label: '企业资源计划',
+    icon: 'i-lucide-building-2',
+    defaultOpen: true,
+    children: [
+      { label: '企业工作台', icon: 'i-lucide-panels-top-left', to: '/erp' },
+      {
+        label: '财经管理',
+        icon: 'i-lucide-landmark',
+        defaultOpen: true,
+        children: [
+          { label: '财务首页', icon: 'i-lucide-layout-dashboard', to: '/erp/finance' },
+          { label: '银行管理', icon: 'i-lucide-building', to: '/erp/finance/banks' },
+          { label: '总账管理', icon: 'i-lucide-book-open', to: '/erp/finance/ledgers' },
+          { label: '账户管理', icon: 'i-lucide-book-key', to: '/erp/finance/accounts' },
+          { label: '交易管理', icon: 'i-lucide-arrow-right-left', to: '/erp/finance/transactions' }
+        ]
+      },
+      {
+        label: '采购管理',
+        icon: 'i-lucide-shopping-cart',
+        defaultOpen: true,
+        children: [
+          { label: '采购首页', icon: 'i-lucide-layout-dashboard', to: '/erp/procurement' },
+          { label: '商品 / 物料', icon: 'i-lucide-package-2', to: '/erp/procurement/products' },
+          { label: '供应商管理', icon: 'i-lucide-handshake', to: '/erp/procurement/vendors' },
+          { label: '供应商银行信息', icon: 'i-lucide-landmark', to: '/erp/procurement/vendor-bank-accounts' },
+          { label: '采购订单', icon: 'i-lucide-file-text', to: '/erp/procurement/purchase-orders' },
+          { label: '收货记录', icon: 'i-lucide-truck', to: '/erp/procurement/goods-receipts' },
+          { label: '供应商发票', icon: 'i-lucide-receipt-text', to: '/erp/procurement/vendor-invoices' },
+          { label: '付款单', icon: 'i-lucide-wallet-cards', to: '/erp/procurement/payments' }
+        ]
+      },
+      {
+        label: '人力资源',
+        icon: 'i-lucide-users-round',
+        defaultOpen: true,
+        children: [
+          { label: 'HR 首页', icon: 'i-lucide-layout-dashboard', to: '/erp/hr' },
+          { label: '部门管理', icon: 'i-lucide-building-2', to: '/erp/hr/departments' },
+          { label: '岗位管理', icon: 'i-lucide-briefcase-business', to: '/erp/hr/positions' },
+          { label: '员工管理', icon: 'i-lucide-id-card', to: '/erp/hr/employees' },
+          { label: '任职关系', icon: 'i-lucide-network', to: '/erp/hr/employments' },
+          { label: '报销单', icon: 'i-lucide-receipt', to: '/erp/hr/expense-claims' }
+        ]
+      }
+    ]
   },
   {
-    label: '平台',
-    path: '/platform',
-    icon: 'i-heroicons-cog-6-tooth'
+    label: '平台管理',
+    icon: 'i-lucide-settings-2',
+    defaultOpen: true,
+    children: [
+      { label: '平台首页', icon: 'i-lucide-layout-dashboard', to: '/platform' }
+    ]
   }
-]
+])
 
-function toggleColorMode() {
-  colorMode.preference = isDark.value ? 'light' : 'dark'
-}
+const searchGroups = computed(() => [
+  {
+    id: 'home',
+    label: '主页',
+    items: [
+      { label: 'Agent 首页', icon: 'i-lucide-sparkles', to: '/home' },
+      { label: '经营看板', icon: 'i-lucide-chart-column-big', to: '/home/dashboard' },
+      { label: '任务工作区', icon: 'i-lucide-layout-dashboard', to: '/home/workspace' }
+    ]
+  },
+  {
+    id: 'crm',
+    label: '客户关系管理',
+    items: [
+      { label: 'CRM 首页', icon: 'i-lucide-layout-dashboard', to: '/crm' },
+      { label: '客户管理', icon: 'i-lucide-users', to: '/crm/customers' },
+      { label: '商机管理', icon: 'i-lucide-badge-dollar-sign', to: '/crm/opportunities' },
+      { label: '订单管理', icon: 'i-lucide-file-text', to: '/crm/orders' }
+    ]
+  },
+  {
+    id: 'erp-finance',
+    label: '财经管理',
+    items: [
+      { label: '财务首页', icon: 'i-lucide-layout-dashboard', to: '/erp/finance' },
+      { label: '银行管理', icon: 'i-lucide-building', to: '/erp/finance/banks' },
+      { label: '总账管理', icon: 'i-lucide-book-open', to: '/erp/finance/ledgers' },
+      { label: '账户管理', icon: 'i-lucide-book-key', to: '/erp/finance/accounts' },
+      { label: '交易管理', icon: 'i-lucide-arrow-right-left', to: '/erp/finance/transactions' }
+    ]
+  },
+  {
+    id: 'erp-procurement',
+    label: '采购管理',
+    items: [
+      { label: '采购首页', icon: 'i-lucide-layout-dashboard', to: '/erp/procurement' },
+      { label: '商品 / 物料', icon: 'i-lucide-package-2', to: '/erp/procurement/products' },
+      { label: '供应商管理', icon: 'i-lucide-handshake', to: '/erp/procurement/vendors' },
+      { label: '供应商银行信息', icon: 'i-lucide-landmark', to: '/erp/procurement/vendor-bank-accounts' },
+      { label: '采购订单', icon: 'i-lucide-file-text', to: '/erp/procurement/purchase-orders' },
+      { label: '收货记录', icon: 'i-lucide-truck', to: '/erp/procurement/goods-receipts' },
+      { label: '供应商发票', icon: 'i-lucide-receipt-text', to: '/erp/procurement/vendor-invoices' },
+      { label: '付款单', icon: 'i-lucide-wallet-cards', to: '/erp/procurement/payments' }
+    ]
+  },
+  {
+    id: 'erp-hr',
+    label: '人力资源',
+    items: [
+      { label: 'HR 首页', icon: 'i-lucide-layout-dashboard', to: '/erp/hr' },
+      { label: '部门管理', icon: 'i-lucide-building-2', to: '/erp/hr/departments' },
+      { label: '岗位管理', icon: 'i-lucide-briefcase-business', to: '/erp/hr/positions' },
+      { label: '员工管理', icon: 'i-lucide-id-card', to: '/erp/hr/employees' },
+      { label: '任职关系', icon: 'i-lucide-network', to: '/erp/hr/employments' },
+      { label: '报销单', icon: 'i-lucide-receipt', to: '/erp/hr/expense-claims' }
+    ]
+  },
+  {
+    id: 'platform',
+    label: '平台管理',
+    items: [
+      { label: '平台首页', icon: 'i-lucide-layout-dashboard', to: '/platform' }
+    ]
+  }
+])
 
-const currentYear = computed(() => new Date().getFullYear())
+watch(
+  () => route.fullPath,
+  () => {
+    open.value = false
+  }
+)
 </script>
+
+<template>
+  <UDashboardGroup class="erp-shell">
+    <UDashboardSidebar
+      id="default"
+      v-model:open="open"
+      v-model:collapsed="collapsed"
+      collapsible
+      resizable
+      class="erp-shell-sidebar"
+    >
+      <template #header>
+        <div class="flex items-center gap-2">
+          <TenantsMenu :collapsed="collapsed" />
+        </div>
+      </template>
+
+      <div class="erp-shell-sidebar-body">
+        <UDashboardSearchButton
+          :collapsed="collapsed"
+          :tooltip="collapsed"
+          :class="collapsed ? 'mx-auto' : 'w-full'"
+        />
+        <UNavigationMenu
+          orientation="vertical"
+          :items="primaryLinks"
+          :collapsed="collapsed"
+          popover
+          tooltip
+          :ui="collapsed ? { link: 'justify-center' } : undefined"
+        />
+      </div>
+
+      <template #footer>
+        <div>
+          <UserMenu :collapsed="collapsed" />
+        </div>
+      </template>
+    </UDashboardSidebar>
+
+    <div class="erp-shell-main">
+      <main class="erp-shell-body">
+        <UButton
+          v-if="!open"
+          icon="i-lucide-panel-left-open"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          square
+          class="fixed bottom-4 left-4 z-30 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.4)] lg:hidden"
+          aria-label="打开导航栏"
+          @click="open = true"
+        />
+        <slot />
+      </main>
+    </div>
+
+    <UDashboardSearch :groups="searchGroups" />
+    <NotificationsSlideover />
+  </UDashboardGroup>
+</template>

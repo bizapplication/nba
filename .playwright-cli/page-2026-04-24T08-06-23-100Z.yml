@@ -1,0 +1,240 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - button "NBA 总部 Unified ERP Workspace" [ref=e5]:
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: NBA 总部
+          - paragraph [ref=e10]: Unified ERP Workspace
+      - generic [ref=e13]:
+        - button "Search… ⌘ k" [ref=e14]:
+          - generic [ref=e16]: Search…
+          - generic [ref=e17]:
+            - generic [ref=e18]: ⌘
+            - generic [ref=e19]: k
+        - navigation [ref=e20]:
+          - list [ref=e21]:
+            - listitem [ref=e22]:
+              - button "主页" [expanded] [ref=e23]:
+                - generic [ref=e25]: 主页
+              - region "主页" [ref=e28]:
+                - list [ref=e29]:
+                  - listitem [ref=e30]:
+                    - link "Agent 首页" [ref=e31] [cursor=pointer]:
+                      - /url: /home
+                      - generic [ref=e33]: Agent 首页
+                  - listitem [ref=e34]:
+                    - link "经营看板" [ref=e35] [cursor=pointer]:
+                      - /url: /home/dashboard
+                      - generic [ref=e37]: 经营看板
+                  - listitem [ref=e38]:
+                    - link "任务工作区" [ref=e39] [cursor=pointer]:
+                      - /url: /home/workspace
+                      - generic [ref=e41]: 任务工作区
+            - listitem [ref=e42]:
+              - button "客户关系管理" [expanded] [ref=e43]:
+                - generic [ref=e45]: 客户关系管理
+              - region "客户关系管理" [ref=e48]:
+                - list [ref=e49]:
+                  - listitem [ref=e50]:
+                    - link "CRM 首页" [ref=e51] [cursor=pointer]:
+                      - /url: /crm
+                      - generic [ref=e53]: CRM 首页
+                  - listitem [ref=e54]:
+                    - link "客户管理" [ref=e55] [cursor=pointer]:
+                      - /url: /crm/customers
+                      - generic [ref=e57]: 客户管理
+                  - listitem [ref=e58]:
+                    - link "商机管理" [ref=e59] [cursor=pointer]:
+                      - /url: /crm/opportunities
+                      - generic [ref=e61]: 商机管理
+                  - listitem [ref=e62]:
+                    - link "订单管理" [ref=e63] [cursor=pointer]:
+                      - /url: /crm/orders
+                      - generic [ref=e65]: 订单管理
+            - listitem [ref=e66]:
+              - button "企业资源计划" [expanded] [ref=e67]:
+                - generic [ref=e69]: 企业资源计划
+              - region "企业资源计划" [ref=e72]:
+                - list [ref=e73]:
+                  - listitem [ref=e74]:
+                    - link "企业工作台" [ref=e75] [cursor=pointer]:
+                      - /url: /erp
+                      - generic [ref=e77]: 企业工作台
+                  - listitem [ref=e78]:
+                    - button "财经管理" [expanded] [ref=e79]:
+                      - generic [ref=e81]: 财经管理
+                    - region "财经管理" [ref=e84]:
+                      - list [ref=e85]:
+                        - listitem [ref=e86]:
+                          - link "财务首页" [ref=e87] [cursor=pointer]:
+                            - /url: /erp/finance
+                            - generic [ref=e89]: 财务首页
+                        - listitem [ref=e90]:
+                          - link "银行管理" [ref=e91] [cursor=pointer]:
+                            - /url: /erp/finance/banks
+                            - generic [ref=e93]: 银行管理
+                        - listitem [ref=e94]:
+                          - link "总账管理" [ref=e95] [cursor=pointer]:
+                            - /url: /erp/finance/ledgers
+                            - generic [ref=e97]: 总账管理
+                        - listitem [ref=e98]:
+                          - link "账户管理" [ref=e99] [cursor=pointer]:
+                            - /url: /erp/finance/accounts
+                            - generic [ref=e101]: 账户管理
+                        - listitem [ref=e102]:
+                          - link "交易管理" [ref=e103] [cursor=pointer]:
+                            - /url: /erp/finance/transactions
+                            - generic [ref=e105]: 交易管理
+                  - listitem [ref=e106]:
+                    - button "采购管理" [expanded] [ref=e107]:
+                      - generic [ref=e109]: 采购管理
+                    - region "采购管理" [ref=e112]:
+                      - list [ref=e113]:
+                        - listitem [ref=e114]:
+                          - link "采购首页" [ref=e115] [cursor=pointer]:
+                            - /url: /erp/procurement
+                            - generic [ref=e117]: 采购首页
+                        - listitem [ref=e118]:
+                          - link "商品 / 物料" [ref=e119] [cursor=pointer]:
+                            - /url: /erp/procurement/products
+                            - generic [ref=e121]: 商品 / 物料
+                        - listitem [ref=e122]:
+                          - link "供应商管理" [ref=e123] [cursor=pointer]:
+                            - /url: /erp/procurement/vendors
+                            - generic [ref=e125]: 供应商管理
+                        - listitem [ref=e126]:
+                          - link "供应商银行信息" [ref=e127] [cursor=pointer]:
+                            - /url: /erp/procurement/vendor-bank-accounts
+                            - generic [ref=e129]: 供应商银行信息
+                        - listitem [ref=e130]:
+                          - link "采购订单" [ref=e131] [cursor=pointer]:
+                            - /url: /erp/procurement/purchase-orders
+                            - generic [ref=e133]: 采购订单
+                        - listitem [ref=e134]:
+                          - link "收货记录" [ref=e135] [cursor=pointer]:
+                            - /url: /erp/procurement/goods-receipts
+                            - generic [ref=e137]: 收货记录
+                        - listitem [ref=e138]:
+                          - link "供应商发票" [ref=e139] [cursor=pointer]:
+                            - /url: /erp/procurement/vendor-invoices
+                            - generic [ref=e141]: 供应商发票
+                        - listitem [ref=e142]:
+                          - link "付款单" [ref=e143] [cursor=pointer]:
+                            - /url: /erp/procurement/payments
+                            - generic [ref=e145]: 付款单
+                  - listitem [ref=e146]:
+                    - button "人力资源" [expanded] [ref=e147]:
+                      - generic [ref=e149]: 人力资源
+                    - region "人力资源" [ref=e152]:
+                      - list [ref=e153]:
+                        - listitem [ref=e154]:
+                          - link "HR 首页" [ref=e155] [cursor=pointer]:
+                            - /url: /erp/hr
+                            - generic [ref=e157]: HR 首页
+                        - listitem [ref=e158]:
+                          - link "部门管理" [ref=e159] [cursor=pointer]:
+                            - /url: /erp/hr/departments
+                            - generic [ref=e161]: 部门管理
+                        - listitem [ref=e162]:
+                          - link "岗位管理" [ref=e163] [cursor=pointer]:
+                            - /url: /erp/hr/positions
+                            - generic [ref=e165]: 岗位管理
+                        - listitem [ref=e166]:
+                          - link "员工管理" [ref=e167] [cursor=pointer]:
+                            - /url: /erp/hr/employees
+                            - generic [ref=e169]: 员工管理
+                        - listitem [ref=e170]:
+                          - link "任职关系" [ref=e171] [cursor=pointer]:
+                            - /url: /erp/hr/employments
+                            - generic [ref=e173]: 任职关系
+                        - listitem [ref=e174]:
+                          - link "报销单" [ref=e175] [cursor=pointer]:
+                            - /url: /erp/hr/expense-claims
+                            - generic [ref=e177]: 报销单
+            - listitem [ref=e178]:
+              - button "平台管理" [expanded] [ref=e179]:
+                - generic [ref=e181]: 平台管理
+              - region "平台管理" [ref=e184]:
+                - list [ref=e185]:
+                  - listitem [ref=e186]:
+                    - link "平台首页" [ref=e187] [cursor=pointer]:
+                      - /url: /platform
+                      - generic [ref=e189]: 平台首页
+      - button "System User Finance Operator ERP Engineer" [ref=e192]:
+        - img "System User" [ref=e194]
+        - generic [ref=e195]:
+          - paragraph [ref=e196]: Finance Operator
+          - paragraph [ref=e197]: ERP Engineer
+    - separator
+    - generic [ref=e199]:
+      - banner [ref=e200]:
+        - generic [ref=e201]:
+          - generic [ref=e203]:
+            - generic [ref=e204]:
+              - generic [ref=e205]: NBA Workspace
+              - generic [ref=e206]: Agent 会话
+            - generic [ref=e210]:
+              - heading "Agent 会话" [level=1] [ref=e324]
+              - paragraph [ref=e212]: 查看单条 run 的真实消息流、审批动作、附件和执行结果。
+          - generic [ref=e213]:
+            - button [ref=e214]
+            - button [ref=e216]
+      - main [ref=e218]:
+        - generic [ref=e325]:
+          - generic [ref=e327]:
+            - generic [ref=e328]:
+              - generic [ref=e329]:
+                - generic [ref=e330]: Chat Detail
+                - generic [ref=e331]: 已排队
+              - generic [ref=e332]:
+                - heading "undefined" [level=2] [ref=e333]
+                - paragraph
+            - generic [ref=e334]:
+              - generic [ref=e336]:
+                - paragraph [ref=e337]: 当前 run 状态
+                - paragraph [ref=e338]: 这页会展示真实消息流、审批动作和附件。
+              - generic [ref=e340]:
+                - generic [ref=e341]:
+                  - paragraph [ref=e342]: 模型
+                  - paragraph [ref=e343]: undefined
+                - generic [ref=e344]:
+                  - paragraph [ref=e345]: 附件
+                  - paragraph [ref=e346]: 0 份
+                - generic [ref=e347]:
+                  - link "返回工作区" [ref=e348] [cursor=pointer]:
+                    - /url: /home/workspace
+                    - text: 返回工作区
+                  - link "发起新任务" [ref=e350] [cursor=pointer]:
+                    - /url: /home
+                    - text: 发起新任务
+          - generic [ref=e352]:
+            - generic [ref=e353]:
+              - generic [ref=e355]:
+                - heading "对话消息流" [level=3] [ref=e356]
+                - paragraph [ref=e357]: 只读阶段会直接返回答复；文件、命令、浏览器动作会先转成审批卡。
+              - generic [ref=e359]:
+                - generic [ref=e360]:
+                  - paragraph [ref=e361]: 继续追问
+                  - paragraph [ref=e362]: 继续走只读链路；如果涉及文件、命令或浏览器动作，会再次生成审批请求。
+                - textbox "继续追问，或要求生成新的审批动作。" [ref=e364]
+                - generic [ref=e365]:
+                  - button "添加文件" [ref=e366]: 添加文件
+                  - button "发送追问" [ref=e368]: 发送追问
+            - generic [ref=e370]:
+              - generic [ref=e371]:
+                - generic [ref=e373]:
+                  - heading "Prompt 摘要" [level=3] [ref=e374]
+                  - paragraph [ref=e375]: 帮助你快速回忆这条 run 的原始目标。
+                - generic [ref=e377]: undefined
+              - generic [ref=e378]:
+                - generic [ref=e380]:
+                  - heading "审批动作" [level=3] [ref=e381]
+                  - paragraph [ref=e382]: 文件修改、命令执行、浏览器自动化都会先出现在这里，只有审批通过才会继续执行。
+                - generic [ref=e385]: 当前还没有审批动作。
+              - generic [ref=e386]:
+                - generic [ref=e388]:
+                  - heading "关联文件" [level=3] [ref=e389]
+                  - paragraph [ref=e390]: "文件会保存在本地 `demo-files/uploads`，并跟随当前 run 展示。"
+                - generic [ref=e393]: 当前 run 没有附件。
+  - region "Notifications (F8)":
+    - list
