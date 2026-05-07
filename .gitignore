@@ -176,6 +176,23 @@ Desktop.ini
 tmp/
 temp/
 *.tmp
+.tmp-ocpkg/
+
+# Local demo runtime
+.runtime/
+.openclaw/
+.data/*.sqlite
+.data/*.sqlite-shm
+.data/*.sqlite-wal
+!.data/.gitkeep
+demo-files/uploads/*
+!demo-files/uploads/.gitkeep
+AGENTS.md
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
 
 # Build artifacts
 **/build/

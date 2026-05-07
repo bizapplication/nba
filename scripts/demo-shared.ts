@@ -7,7 +7,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 export interface DemoConfig {
   repoRoot: string;
   runtimeDir: string;
-  runtimeCloneDir: string;
+  runtimeInstallDir: string;
   openclawHomeDir: string;
   dataDir: string;
   demoFilesDir: string;
@@ -22,9 +22,12 @@ export interface DemoConfig {
   adminPassword: string;
   adminName: string;
   jwtSecret: string;
-  openaiApiKey: string;
+  openaiApiKey: string | null;
+  deepseekApiKey: string | null;
   openclawGatewayToken: string;
   openclawModel: string;
+  openclawAuthSourceHome: string | null;
+  useGlobalOpenClawCli: boolean;
   ports: {
     web: number;
     crm: number;
@@ -57,9 +60,24 @@ function requiredEnv(name: string) {
   return value;
 }
 
+function optionalEnv(name: string) {
+  const value = process.env[name]?.trim();
+  return value || null;
+}
+
 function optionalNumber(name: string, fallback: number) {
   const value = process.env[name]?.trim();
   return value ? Number(value) : fallback;
+}
+
+function optionalBoolean(name: string, fallback: boolean) {
+  const value = process.env[name]?.trim();
+
+  if (!value) {
+    return fallback;
+  }
+
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
 }
 
 function ensureDir(dirPath: string) {
@@ -69,7 +87,7 @@ function ensureDir(dirPath: string) {
 export function getDemoConfig(): DemoConfig {
   const repoRoot = process.cwd();
   const runtimeDir = path.join(repoRoot, '.runtime');
-  const runtimeCloneDir = path.join(runtimeDir, 'openclaw');
+  const runtimeInstallDir = path.join(runtimeDir, 'openclaw');
   const openclawHomeDir = path.join(runtimeDir, 'openclaw-home');
   const dataDir = path.join(repoRoot, '.data');
   const demoFilesDir = path.join(repoRoot, 'demo-files');
@@ -79,7 +97,7 @@ export function getDemoConfig(): DemoConfig {
   return {
     repoRoot,
     runtimeDir,
-    runtimeCloneDir,
+    runtimeInstallDir,
     openclawHomeDir,
     dataDir,
     demoFilesDir,
@@ -94,9 +112,12 @@ export function getDemoConfig(): DemoConfig {
     adminPassword: requiredEnv('DEMO_ADMIN_PASSWORD'),
     adminName: process.env.DEMO_ADMIN_NAME?.trim() || 'NBA Demo Admin',
     jwtSecret: requiredEnv('DEMO_JWT_SECRET'),
-    openaiApiKey: requiredEnv('OPENAI_API_KEY'),
+    openaiApiKey: optionalEnv('OPENAI_API_KEY'),
+    deepseekApiKey: optionalEnv('DEEPSEEK_API_KEY'),
     openclawGatewayToken: requiredEnv('OPENCLAW_GATEWAY_TOKEN'),
-    openclawModel: process.env.OPENCLAW_DEMO_MODEL?.trim() || 'openai/gpt-5.4',
+    openclawModel: process.env.OPENCLAW_DEMO_MODEL?.trim() || 'deepseek/deepseek-v4-flash',
+    openclawAuthSourceHome: optionalEnv('OPENCLAW_AUTH_SOURCE_HOME'),
+    useGlobalOpenClawCli: optionalBoolean('OPENCLAW_USE_GLOBAL_CLI', false),
     ports: {
       web: optionalNumber('DEMO_WEB_PORT', 3000),
       crm: optionalNumber('DEMO_CRM_PORT', 3002),

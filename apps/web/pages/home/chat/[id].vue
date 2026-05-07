@@ -1,9 +1,21 @@
 <script setup lang="ts">
-import type { HomeChatMessage } from '~/types/home'
+import type { HomeActionRequest, HomeChatMessage } from '~/types/home'
+
+definePageMeta({
+  middleware: 'home-auth'
+})
 
 const route = useRoute()
 const messageViewport = ref<HTMLElement | null>(null)
-const { getThread, sendMessageToThread } = useHomeWorkspace()
+const {
+  approveAction,
+  ensureThread,
+  getThread,
+  isSendingMessage,
+  pendingActionId,
+  rejectAction,
+  sendMessageToThread
+} = useHomeWorkspace()
 
 const runId = computed(() => {
   const value = route.params.id
@@ -13,6 +25,8 @@ const runId = computed(() => {
 const thread = computed(() => {
   return getThread(runId.value)
 })
+
+await ensureThread(runId.value)
 
 function messageAlignment(role: HomeChatMessage['role']) {
   return role === 'user' ? 'justify-end' : 'justify-start'
@@ -40,12 +54,42 @@ function messageLabel(role: HomeChatMessage['role']) {
   }
 }
 
+function actionTone(action: HomeActionRequest) {
+  if (action.status === 'completed') {
+    return 'border-success/20 bg-success/5'
+  }
+
+  if (action.status === 'failed' || action.status === 'rejected') {
+    return 'border-error/20 bg-error/5'
+  }
+
+  return 'border-warning/20 bg-warning/5'
+}
+
 async function continueConversation() {
   if (!thread.value) {
     return
   }
 
-  sendMessageToThread(thread.value.runId)
+  await sendMessageToThread(thread.value.runId)
+  await nextTick()
+}
+
+async function approve(requestId: string) {
+  if (!thread.value) {
+    return
+  }
+
+  await approveAction(thread.value.runId, requestId)
+  await nextTick()
+}
+
+async function reject(requestId: string) {
+  if (!thread.value) {
+    return
+  }
+
+  await rejectAction(thread.value.runId, requestId)
   await nextTick()
 }
 
@@ -92,6 +136,57 @@ watch(
                   </p>
                 </article>
               </div>
+
+              <div v-if="thread.actionRequests.length" class="space-y-3">
+                <article
+                  v-for="action in thread.actionRequests"
+                  :key="action.id"
+                  :class="['rounded-[1.5rem] border px-4 py-4 shadow-sm', actionTone(action)]"
+                >
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="text-sm font-semibold text-highlighted">
+                        {{ action.title }}
+                      </p>
+                      <p class="mt-2 text-sm leading-7 text-toned">
+                        {{ action.summary }}
+                      </p>
+                      <p v-if="action.target" class="mt-2 text-xs text-muted">
+                        {{ action.target }}
+                      </p>
+                      <p v-if="action.resultSummary" class="mt-2 text-xs leading-6 text-toned">
+                        {{ action.resultSummary }}
+                      </p>
+                      <p v-if="action.errorMessage" class="mt-2 text-xs leading-6 text-error">
+                        {{ action.errorMessage }}
+                      </p>
+                    </div>
+                    <UBadge color="neutral" variant="subtle">
+                      {{ action.status }}
+                    </UBadge>
+                  </div>
+
+                  <div v-if="action.status === 'pending'" class="mt-4 flex flex-wrap gap-2">
+                    <UButton
+                      color="primary"
+                      size="sm"
+                      :loading="pendingActionId === action.id"
+                      @click="approve(action.id)"
+                    >
+                      审批并执行
+                    </UButton>
+                    <UButton
+                      color="neutral"
+                      variant="outline"
+                      size="sm"
+                      :loading="pendingActionId === action.id"
+                      @click="reject(action.id)"
+                    >
+                      拒绝
+                    </UButton>
+                  </div>
+                </article>
+              </div>
             </div>
           </div>
 
@@ -100,6 +195,7 @@ watch(
               <HomeConversationComposer
                 mode="docked"
                 submit-label="继续发送"
+                :pending="isSendingMessage"
                 @submit="continueConversation"
               />
             </div>

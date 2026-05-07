@@ -1,8 +1,19 @@
 <script setup lang="ts">
-const { createMockRun } = useHomeWorkspace()
+definePageMeta({
+  middleware: 'home-auth'
+})
+
+const { createMockRun, isSubmittingRun, refreshRuns } = useHomeWorkspace()
+
+await refreshRuns()
 
 async function startConversation() {
-  const run = createMockRun()
+  const run = await createMockRun()
+
+  if (!run) {
+    return
+  }
+
   await navigateTo(`/home/chat/${run.id}`)
 }
 </script>
@@ -33,6 +44,7 @@ async function startConversation() {
             <HomeConversationComposer
               mode="centered"
               submit-label="开始对话"
+              :pending="isSubmittingRun"
               @submit="startConversation"
             />
           </div>

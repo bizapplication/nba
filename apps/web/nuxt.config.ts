@@ -13,6 +13,9 @@ export default defineNuxtConfig({
     '/': { redirect: '/erp' }
   },
   runtimeConfig: {
-    financeApiBase: process.env.NUXT_FINANCE_API_BASE || 'http://127.0.0.1:3001'
+    financeApiBase: process.env.NUXT_FINANCE_API_BASE || 'http://127.0.0.1:3001',
+    crmApiBase: process.env.NUXT_CRM_API_BASE || 'http://127.0.0.1:3002',
+    platformApiBase: process.env.NUXT_PLATFORM_API_BASE || 'http://127.0.0.1:3003',
+    agentApiBase: process.env.NUXT_AGENT_API_BASE || 'http://127.0.0.1:3004'
   }
 })

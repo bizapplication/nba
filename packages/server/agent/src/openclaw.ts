@@ -32,11 +32,9 @@ export interface ResponsesLoopResult {
 
 export interface ClientToolDefinition {
   type: 'function';
-  function: {
-    name: string;
-    description: string;
-    parameters: Record<string, unknown>;
-  };
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
 }
 
 function extractText(response: ResponsesApiResponse) {
@@ -72,6 +70,7 @@ export async function callOpenClaw(input: {
 }) {
   const response = await fetch(`${env.openclawBaseUrl}/v1/responses`, {
     method: 'POST',
+    signal: AbortSignal.timeout(env.openclawRequestTimeoutMs),
     headers: {
       authorization: `Bearer ${env.openclawGatewayToken}`,
       'content-type': 'application/json',

@@ -1,5 +1,22 @@
 <script setup lang="ts">
-const { dashboardRiskAlerts, dashboardTodos, dashboardTrend } = useHomeWorkspace()
+definePageMeta({
+  middleware: 'home-auth'
+})
+
+const {
+  dashboardRiskAlerts,
+  dashboardTodos,
+  dashboardTrend,
+  ensureThread,
+  orderedRuns,
+  refreshRuns
+} = useHomeWorkspace()
+
+await refreshRuns()
+
+for (const run of orderedRuns.value.slice(0, 6)) {
+  await ensureThread(run.id)
+}
 
 const businessSignals = [
   {

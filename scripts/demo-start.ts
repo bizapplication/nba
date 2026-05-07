@@ -22,13 +22,15 @@ async function main() {
     DEMO_ADMIN_PASSWORD: config.adminPassword,
     DEMO_ADMIN_NAME: config.adminName,
     DEMO_JWT_SECRET: config.jwtSecret,
-    OPENAI_API_KEY: config.openaiApiKey,
+    OPENAI_API_KEY: config.openaiApiKey ?? undefined,
+    DEEPSEEK_API_KEY: config.deepseekApiKey ?? undefined,
     OPENCLAW_GATEWAY_TOKEN: config.openclawGatewayToken,
     OPENCLAW_DEMO_MODEL: config.openclawModel,
     OPENCLAW_BASE_URL: `http://127.0.0.1:${config.ports.openclaw}`,
     OPENCLAW_HOME: config.openclawHomeDir,
     OPENCLAW_STATE_DIR: config.openclawHomeDir,
     OPENCLAW_CONFIG_PATH: config.openclawConfigPath,
+    OPENCLAW_DISABLE_BONJOUR: '1',
     CRM_DB_HOST: process.env.CRM_DB_HOST || '127.0.0.1',
     CRM_DB_PORT: String(config.ports.postgres),
     CRM_DB_USER: process.env.CRM_DB_USER || 'postgres',
@@ -42,10 +44,17 @@ async function main() {
   } satisfies NodeJS.ProcessEnv;
 
   const processes = [
-    spawnManagedProcess('openclaw', 'pnpm', ['gateway:watch'], {
-      cwd: config.runtimeCloneDir,
-      env: baseEnv
-    }),
+    spawnManagedProcess(
+      'openclaw',
+      config.useGlobalOpenClawCli ? 'openclaw' : 'pnpm',
+      config.useGlobalOpenClawCli
+        ? ['gateway', 'run', '--force', '--verbose']
+        : ['exec', 'openclaw', 'gateway', 'run', '--force', '--verbose'],
+      {
+        cwd: config.useGlobalOpenClawCli ? config.repoRoot : config.runtimeInstallDir,
+        env: baseEnv
+      }
+    ),
     spawnManagedProcess('platform', 'pnpm', ['--filter', '@nba/platform', 'dev'], {
       cwd: config.repoRoot,
       env: {

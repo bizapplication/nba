@@ -7,24 +7,166 @@ import {
   runCommand
 } from './demo-shared.ts';
 
-const OPENCLAW_REPO = 'https://github.com/openclaw/openclaw.git';
-const OPENCLAW_TAG = 'v2026.4.14';
+const OPENCLAW_VERSION = '2026.4.24';
+
+function ensureParentDir(filePath: string) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
+
+function resetConfigSnapshots(configPath: string) {
+  const configDir = path.dirname(configPath);
+
+  if (!fs.existsSync(configDir)) {
+    return;
+  }
+
+  for (const entry of fs.readdirSync(configDir)) {
+    if (
+      entry === 'config-health.json' ||
+      entry.startsWith('openclaw.json5.bak') ||
+      entry.startsWith('openclaw.json5.last-good') ||
+      entry.startsWith('openclaw.json5.clobbered.')
+    ) {
+      fs.rmSync(path.join(configDir, entry), { force: true, recursive: true });
+    }
+  }
+}
+
+function resetLegacyRuntimeIfNeeded(runtimeInstallDir: string) {
+  const legacyGitDir = path.join(runtimeInstallDir, '.git');
+  const packageJsonPath = path.join(runtimeInstallDir, 'package.json');
+
+  if (fs.existsSync(legacyGitDir)) {
+    fs.rmSync(runtimeInstallDir, { recursive: true, force: true });
+    return;
+  }
+
+  if (!fs.existsSync(packageJsonPath)) {
+    return;
+  }
+
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as { name?: string };
+
+    if (packageJson.name !== 'nba-openclaw-runtime') {
+      fs.rmSync(runtimeInstallDir, { recursive: true, force: true });
+    }
+  } catch {
+    fs.rmSync(runtimeInstallDir, { recursive: true, force: true });
+  }
+}
 
 function configTemplate() {
   const config = getDemoConfig();
   const browserExecutable = chromiumExecutablePath();
+  const usesDeepSeek = config.openclawModel.startsWith('deepseek/');
 
   const executablePath = browserExecutable
     ? `    executablePath: ${JSON.stringify(browserExecutable)},\n`
     : '';
 
-  return `{
-  identity: {
-    name: "NBA Demo Agent",
-    theme: "business copilot",
-    emoji: "🏀",
-  },
+  const deepSeekAgentModels = usesDeepSeek
+    ? `
+      models: {
+        "deepseek/deepseek-v4-flash": {
+          alias: "DeepSeek",
+        },
+      },
+`
+    : '';
 
+  const deepSeekProviderConfig = usesDeepSeek
+    ? `,
+
+  models: {
+    mode: "merge",
+    providers: {
+      deepseek: {
+        baseUrl: "https://api.deepseek.com",
+        api: "openai-completions",
+        models: [
+          {
+            id: "deepseek-v4-flash",
+            name: "DeepSeek V4 Flash",
+            reasoning: true,
+            input: ["text"],
+            contextWindow: 1000000,
+            maxTokens: 384000,
+            cost: {
+              input: 0.14,
+              output: 0.28,
+              cacheRead: 0.028,
+              cacheWrite: 0,
+            },
+            compat: {
+              supportsUsageInStreaming: true,
+              supportsReasoningEffort: true,
+              maxTokensField: "max_tokens",
+            },
+          },
+          {
+            id: "deepseek-v4-pro",
+            name: "DeepSeek V4 Pro",
+            reasoning: true,
+            input: ["text"],
+            contextWindow: 1000000,
+            maxTokens: 384000,
+            cost: {
+              input: 1.74,
+              output: 3.48,
+              cacheRead: 0.145,
+              cacheWrite: 0,
+            },
+            compat: {
+              supportsUsageInStreaming: true,
+              supportsReasoningEffort: true,
+              maxTokensField: "max_tokens",
+            },
+          },
+          {
+            id: "deepseek-chat",
+            name: "DeepSeek Chat",
+            reasoning: false,
+            input: ["text"],
+            contextWindow: 131072,
+            maxTokens: 8192,
+            cost: {
+              input: 0.28,
+              output: 0.42,
+              cacheRead: 0.028,
+              cacheWrite: 0,
+            },
+            compat: {
+              supportsUsageInStreaming: true,
+              maxTokensField: "max_tokens",
+            },
+          },
+          {
+            id: "deepseek-reasoner",
+            name: "DeepSeek Reasoner",
+            reasoning: true,
+            input: ["text"],
+            contextWindow: 131072,
+            maxTokens: 65536,
+            cost: {
+              input: 0.28,
+              output: 0.42,
+              cacheRead: 0.028,
+              cacheWrite: 0,
+            },
+            compat: {
+              supportsUsageInStreaming: true,
+              supportsReasoningEffort: false,
+              maxTokensField: "max_tokens",
+            },
+          },
+        ],
+      },
+    },
+  }`
+    : '';
+
+  return `{
   session: {
     dmScope: "per-channel-peer",
   },
@@ -35,7 +177,7 @@ function configTemplate() {
       model: {
         primary: ${JSON.stringify(config.openclawModel)},
       },
-      userTimezone: "Asia/Shanghai",
+${deepSeekAgentModels}      userTimezone: "Asia/Shanghai",
       sandbox: {
         mode: "off",
       },
@@ -77,7 +219,6 @@ function configTemplate() {
     exec: {
       security: "allowlist",
       ask: "off",
-      askFallback: "deny",
       strictInlineEval: true,
       backgroundMs: 10000,
       timeoutSec: 1800,
@@ -105,13 +246,19 @@ ${executablePath}    profiles: {
     },
   },
 
+  discovery: {
+    mdns: {
+      mode: "off",
+    },
+  },
+
   gateway: {
     mode: "local",
     bind: "loopback",
     port: ${config.ports.openclaw},
     auth: {
       mode: "token",
-      token: "\${OPENCLAW_GATEWAY_TOKEN}",
+      token: ${JSON.stringify(config.openclawGatewayToken)},
     },
     controlUi: {
       enabled: false,
@@ -132,7 +279,7 @@ ${executablePath}    profiles: {
         },
       },
     },
-  },
+  }${deepSeekProviderConfig},
 }
 `;
 }
@@ -167,28 +314,74 @@ function approvalsTemplate() {
   );
 }
 
-async function cloneOrUpdateRuntime() {
+async function ensureRuntimeInstalled() {
   const config = getDemoConfig();
 
-  if (!fs.existsSync(config.runtimeCloneDir)) {
-    await runCommand('git', ['clone', OPENCLAW_REPO, config.runtimeCloneDir], {
-      cwd: config.repoRoot
-    });
+  if (config.useGlobalOpenClawCli) {
+    return;
   }
 
-  await runCommand('git', ['fetch', '--tags', '--force'], {
-    cwd: config.runtimeCloneDir
+  resetLegacyRuntimeIfNeeded(config.runtimeInstallDir);
+  fs.mkdirSync(config.runtimeInstallDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(config.runtimeInstallDir, 'package.json'),
+    JSON.stringify(
+      {
+        name: 'nba-openclaw-runtime',
+        private: true,
+        packageManager: 'pnpm@10.30.3',
+        dependencies: {
+          openclaw: OPENCLAW_VERSION
+        },
+        pnpm: {
+          onlyBuiltDependencies: ['openclaw', 'sharp', 'protobufjs', 'koffi']
+        }
+      },
+      null,
+      2
+    )
+  );
+
+  await runCommand('pnpm', ['install', '--dir', config.runtimeInstallDir, '--ignore-workspace', '--no-frozen-lockfile'], {
+    cwd: config.repoRoot
   });
-  await runCommand('git', ['checkout', OPENCLAW_TAG], {
-    cwd: config.runtimeCloneDir
-  });
-  await runCommand('pnpm', ['install'], {
-    cwd: config.runtimeCloneDir
-  });
+}
+
+function copyIfPresent(sourcePath: string, targetPath: string) {
+  if (!fs.existsSync(sourcePath)) {
+    return false;
+  }
+
+  ensureParentDir(targetPath);
+  fs.copyFileSync(sourcePath, targetPath);
+  return true;
+}
+
+function bootstrapFromExistingOpenClawHome() {
+  const config = getDemoConfig();
+
+  if (!config.openclawAuthSourceHome) {
+    return false;
+  }
+
+  const sourceAgentDir = path.join(config.openclawAuthSourceHome, 'agents', 'main', 'agent');
+  const targetAgentDir = path.join(config.openclawHomeDir, 'agents', 'main', 'agent');
+  const copiedAuth = copyIfPresent(
+    path.join(sourceAgentDir, 'auth-profiles.json'),
+    path.join(targetAgentDir, 'auth-profiles.json')
+  );
+  const copiedModels = copyIfPresent(
+    path.join(sourceAgentDir, 'models.json'),
+    path.join(targetAgentDir, 'models.json')
+  );
+
+  return copiedAuth || copiedModels;
 }
 
 async function bootstrapAuthProfile() {
   const config = getDemoConfig();
+  const usesOpenAi = config.openclawModel.startsWith('openai/');
+  const usesDeepSeek = config.openclawModel.startsWith('deepseek/');
   const authProfilesPath = path.join(
     config.openclawHomeDir,
     'agents',
@@ -201,43 +394,88 @@ async function bootstrapAuthProfile() {
     return;
   }
 
+  if (bootstrapFromExistingOpenClawHome()) {
+    return;
+  }
+
+  if (usesDeepSeek && config.deepseekApiKey) {
+    return;
+  }
+
+  if (usesOpenAi && config.openaiApiKey) {
+    return;
+  }
+
+  if (!config.openaiApiKey && !config.deepseekApiKey) {
+    throw new Error(
+      'No existing OpenClaw auth profile was found and no provider API key is set. ' +
+      'Set DEEPSEEK_API_KEY or OPENAI_API_KEY, or configure OPENCLAW_AUTH_SOURCE_HOME to an existing OpenClaw home.'
+    );
+  }
+
   const env = {
     ...process.env,
     OPENCLAW_HOME: config.openclawHomeDir,
     OPENCLAW_STATE_DIR: config.openclawHomeDir,
     OPENCLAW_CONFIG_PATH: config.openclawConfigPath,
-    OPENAI_API_KEY: config.openaiApiKey,
+    OPENAI_API_KEY: config.openaiApiKey ?? undefined,
+    DEEPSEEK_API_KEY: config.deepseekApiKey ?? undefined,
     OPENCLAW_GATEWAY_TOKEN: config.openclawGatewayToken
   };
 
   await runCommand(
-    'pnpm',
-    [
-      'openclaw',
-      'onboard',
-      '--non-interactive',
-      '--mode',
-      'local',
-      '--auth-choice',
-      'openai-api-key',
-      '--secret-input-mode',
-      'ref',
-      '--workspace',
-      config.openclawWorkspace,
-      '--gateway-auth',
-      'token',
-      '--gateway-token-ref-env',
-      'OPENCLAW_GATEWAY_TOKEN',
-      '--gateway-port',
-      String(config.ports.openclaw),
-      '--gateway-bind',
-      'loopback',
-      '--skip-health',
-      '--skip-skills',
-      '--accept-risk'
-    ],
+    config.useGlobalOpenClawCli ? 'openclaw' : 'pnpm',
+    config.useGlobalOpenClawCli
+      ? [
+          'onboard',
+          '--non-interactive',
+          '--mode',
+          'local',
+          '--auth-choice',
+          'openai-api-key',
+          '--secret-input-mode',
+          'ref',
+          '--workspace',
+          config.openclawWorkspace,
+          '--gateway-auth',
+          'token',
+          '--gateway-token-ref-env',
+          'OPENCLAW_GATEWAY_TOKEN',
+          '--gateway-port',
+          String(config.ports.openclaw),
+          '--gateway-bind',
+          'loopback',
+          '--skip-health',
+          '--skip-skills',
+          '--accept-risk'
+        ]
+      : [
+          'exec',
+          'openclaw',
+          'onboard',
+          '--non-interactive',
+          '--mode',
+          'local',
+          '--auth-choice',
+          'openai-api-key',
+          '--secret-input-mode',
+          'ref',
+          '--workspace',
+          config.openclawWorkspace,
+          '--gateway-auth',
+          'token',
+          '--gateway-token-ref-env',
+          'OPENCLAW_GATEWAY_TOKEN',
+          '--gateway-port',
+          String(config.ports.openclaw),
+          '--gateway-bind',
+          'loopback',
+          '--skip-health',
+          '--skip-skills',
+          '--accept-risk'
+        ],
     {
-      cwd: config.runtimeCloneDir,
+      cwd: config.useGlobalOpenClawCli ? config.repoRoot : config.runtimeInstallDir,
       env
     }
   );
@@ -246,12 +484,13 @@ async function bootstrapAuthProfile() {
 async function main() {
   const config = getDemoConfig();
   ensureDemoDirs(config);
-  await cloneOrUpdateRuntime();
+  await ensureRuntimeInstalled();
   fs.mkdirSync(path.join(config.openclawHomeDir, 'config'), { recursive: true });
   await bootstrapAuthProfile();
+  resetConfigSnapshots(config.openclawConfigPath);
   fs.writeFileSync(config.openclawConfigPath, configTemplate());
   fs.writeFileSync(path.join(config.openclawHomeDir, 'exec-approvals.json'), approvalsTemplate());
-  console.log(`OpenClaw runtime ready at ${config.runtimeCloneDir}`);
+  console.log(`OpenClaw runtime ready at ${config.runtimeInstallDir}`);
 }
 
 await main();

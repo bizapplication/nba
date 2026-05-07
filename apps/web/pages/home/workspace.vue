@@ -1,15 +1,27 @@
 <script setup lang="ts">
 import type { HomeAttachment } from '~/types/home'
 
+definePageMeta({
+  middleware: 'home-auth'
+})
+
 const {
+  ensureThread,
   getThread,
   orderedRuns,
+  refreshRuns,
   setPrompt,
   workflowShortcuts,
   workspaceChats,
   workspaceFiles,
   workspaceReports
 } = useHomeWorkspace()
+
+await refreshRuns()
+
+for (const run of orderedRuns.value.slice(0, 6)) {
+  await ensureThread(run.id)
+}
 
 const latestRun = computed(() => orderedRuns.value[0] ?? null)
 const latestThread = computed(() => latestRun.value ? getThread(latestRun.value.id) : null)

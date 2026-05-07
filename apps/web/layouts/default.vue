@@ -19,7 +19,13 @@ const primaryLinks = computed<NavigationMenuItem[]>(() => [
   {
     label: '客户关系管理',
     icon: 'i-lucide-users',
-    to: '/erp/crm'
+    defaultOpen: true,
+    children: [
+      { label: 'CRM 首页', icon: 'i-lucide-layout-dashboard', to: '/crm' },
+      { label: '客户管理', icon: 'i-lucide-users', to: '/crm/customers' },
+      { label: '商机管理', icon: 'i-lucide-badge-dollar-sign', to: '/crm/opportunities' },
+      { label: '订单管理', icon: 'i-lucide-file-text', to: '/crm/orders' }
+    ]
   },
   {
     label: '企业资源计划',
@@ -91,9 +97,12 @@ const searchGroups = computed(() => [
   },
   {
     id: 'crm',
-    label: '客户关系管理（并列域）',
+    label: '客户关系管理',
     items: [
-      { label: '客户关系管理入口', icon: 'i-lucide-users', to: '/erp/crm' }
+      { label: 'CRM 首页', icon: 'i-lucide-layout-dashboard', to: '/crm' },
+      { label: '客户管理', icon: 'i-lucide-users', to: '/crm/customers' },
+      { label: '商机管理', icon: 'i-lucide-badge-dollar-sign', to: '/crm/opportunities' },
+      { label: '订单管理', icon: 'i-lucide-file-text', to: '/crm/orders' }
     ]
   },
   {

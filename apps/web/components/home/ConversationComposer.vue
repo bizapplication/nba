@@ -4,9 +4,11 @@ import type { HomeAttachment, HomePromptPreset } from '~/types/home'
 const props = withDefaults(defineProps<{
   mode?: 'centered' | 'docked'
   submitLabel?: string
+  pending?: boolean
 }>(), {
   mode: 'centered',
-  submitLabel: '发送'
+  submitLabel: '发送',
+  pending: false
 })
 
 const emit = defineEmits<{
@@ -24,7 +26,7 @@ const {
 
 const fileInput = ref<HTMLInputElement | null>(null)
 
-const canSubmit = computed(() => draftPrompt.value.trim().length > 0 || draftAttachments.value.length > 0)
+const canSubmit = computed(() => !props.pending && (draftPrompt.value.trim().length > 0 || draftAttachments.value.length > 0))
 const textareaRows = computed(() => props.mode === 'centered' ? 4 : 1)
 const boxClass = computed(() => {
   if (props.mode === 'centered') {
@@ -165,6 +167,7 @@ function handleSubmit() {
               size="lg"
               square
               :disabled="!canSubmit"
+              :loading="props.pending"
               :aria-label="props.submitLabel"
               @click="handleSubmit"
             />

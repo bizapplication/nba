@@ -9,7 +9,7 @@ import cors from 'cors';
 import express from 'express';
 import multer from 'multer';
 import { z } from 'zod';
-import { requireAuth, type AuthenticatedRequest } from './auth.ts';
+import { requireAuth, type AuthUser, type AuthenticatedRequest } from './auth.ts';
 import {
   addActionRequest,
   addAttachment,
@@ -110,119 +110,168 @@ function readAttachmentNotes(runId: string) {
     .join('\n');
 }
 
+function trimForContext(value: string, maxLength = 420) {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
+function buildRunContext(runId: string) {
+  const messages = listMessages(runId).slice(-10);
+  const actions = [...listActionRequests(runId)].reverse().slice(-6);
+
+  const messageBlock = messages.length
+    ? messages
+        .map((message) => {
+          return `[${message.createdAt}] ${message.role.toUpperCase()}: ${trimForContext(message.content, 520)}`;
+        })
+        .join('\n')
+    : '暂无历史消息。';
+
+  const actionBlock = actions.length
+    ? actions
+        .map((action, index) => {
+          const details = [
+            `${index + 1}. [${action.status.toUpperCase()}] ${action.kind}: ${trimForContext(action.summary, 260)}`
+          ];
+
+          if (action.target) {
+            details.push(`   target: ${action.target}`);
+          }
+
+          if (action.resultSummary) {
+            details.push(`   result: ${trimForContext(action.resultSummary, 260)}`);
+          }
+
+          if (action.errorMessage) {
+            details.push(`   error: ${trimForContext(action.errorMessage, 260)}`);
+          }
+
+          return details.join('\n');
+        })
+        .join('\n')
+    : '暂无审批动作。';
+
+  return [
+    '以下是当前 run 的真实持久化上下文。如果它与任何旧会话记忆冲突，必须以这里为准。',
+    '历史消息：',
+    messageBlock,
+    '审批动作状态：',
+    actionBlock
+  ].join('\n\n');
+}
+
+function resetReadonlySession(runId: string) {
+  const link = sessionLinkFor(runId);
+
+  upsertSessionLink({
+    ...link,
+    readonlyResponseId: null,
+    updatedAt: new Date().toISOString()
+  });
+}
+
 function approvalToolDefinitions(): ClientToolDefinition[] {
   return [
     {
       type: 'function',
-      function: {
-        name: 'crm_list_customers',
-        description: '读取 CRM 客户列表或按关键词搜索客户。',
-        parameters: {
-          type: 'object',
-          properties: {
-            keyword: { type: 'string' },
-            limit: { type: 'integer', minimum: 1, maximum: 20 }
-          }
+      name: 'crm_list_customers',
+      description: '读取 CRM 客户列表或按关键词搜索客户。',
+      parameters: {
+        type: 'object',
+        properties: {
+          keyword: { type: 'string' },
+          limit: { type: 'integer', minimum: 1, maximum: 20 }
         }
       }
     },
     {
       type: 'function',
-      function: {
-        name: 'crm_list_opportunities',
-        description: '读取 CRM 商机列表或按关键词搜索商机。',
-        parameters: {
-          type: 'object',
-          properties: {
-            keyword: { type: 'string' },
-            limit: { type: 'integer', minimum: 1, maximum: 20 }
-          }
+      name: 'crm_list_opportunities',
+      description: '读取 CRM 商机列表或按关键词搜索商机。',
+      parameters: {
+        type: 'object',
+        properties: {
+          keyword: { type: 'string' },
+          limit: { type: 'integer', minimum: 1, maximum: 20 }
         }
       }
     },
     {
       type: 'function',
-      function: {
-        name: 'crm_list_orders',
-        description: '读取 CRM 订单列表或按关键词搜索订单。',
-        parameters: {
-          type: 'object',
-          properties: {
-            keyword: { type: 'string' },
-            limit: { type: 'integer', minimum: 1, maximum: 20 }
-          }
+      name: 'crm_list_orders',
+      description: '读取 CRM 订单列表或按关键词搜索订单。',
+      parameters: {
+        type: 'object',
+        properties: {
+          keyword: { type: 'string' },
+          limit: { type: 'integer', minimum: 1, maximum: 20 }
         }
       }
     },
     {
       type: 'function',
-      function: {
-        name: 'erp_list_finance_accounts',
-        description: '读取 ERP 财务账户列表。',
-        parameters: {
-          type: 'object',
-          properties: {
-            limit: { type: 'integer', minimum: 1, maximum: 20 }
-          }
+      name: 'erp_list_finance_accounts',
+      description: '读取 ERP 财务账户列表。',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 20 }
         }
       }
     },
     {
       type: 'function',
-      function: {
-        name: 'erp_list_transactions',
-        description: '读取 ERP 财务交易列表。',
-        parameters: {
-          type: 'object',
-          properties: {
-            limit: { type: 'integer', minimum: 1, maximum: 20 }
-          }
+      name: 'erp_list_transactions',
+      description: '读取 ERP 财务交易列表。',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 20 }
         }
       }
     },
     {
       type: 'function',
-      function: {
-        name: 'request_file_change',
-        description: '当用户要求修改本地文件、代码或工作区内容时，生成一个待审批的文件操作请求。',
-        parameters: {
-          type: 'object',
-          required: ['summary'],
-          properties: {
-            summary: { type: 'string' },
-            targetPath: { type: 'string' }
-          }
+      name: 'request_file_change',
+      description: '当用户要求修改本地文件、代码或工作区内容时，生成一个待审批的文件操作请求。',
+      parameters: {
+        type: 'object',
+        required: ['summary'],
+        properties: {
+          summary: { type: 'string' },
+          targetPath: { type: 'string' }
         }
       }
     },
     {
       type: 'function',
-      function: {
-        name: 'request_command_execution',
-        description: '当用户要求执行本地命令时，生成一个待审批的命令执行请求。',
-        parameters: {
-          type: 'object',
-          required: ['command'],
-          properties: {
-            command: { type: 'string' },
-            cwd: { type: 'string' },
-            summary: { type: 'string' }
-          }
+      name: 'request_command_execution',
+      description: '当用户要求执行本地命令时，生成一个待审批的命令执行请求。',
+      parameters: {
+        type: 'object',
+        required: ['command'],
+        properties: {
+          command: { type: 'string' },
+          cwd: { type: 'string' },
+          summary: { type: 'string' }
         }
       }
     },
     {
       type: 'function',
-      function: {
-        name: 'request_browser_action',
-        description: '当用户要求打开网页、点击页面、输入、截图或浏览器自动化时，生成一个待审批的浏览器操作请求。',
-        parameters: {
-          type: 'object',
-          required: ['targetUrl', 'goal'],
-          properties: {
-            targetUrl: { type: 'string' },
-            goal: { type: 'string' }
-          }
+      name: 'request_browser_action',
+      description: '当用户要求打开网页、点击页面、输入、截图或浏览器自动化时，生成一个待审批的浏览器操作请求。',
+      parameters: {
+        type: 'object',
+        required: ['targetUrl', 'goal'],
+        properties: {
+          targetUrl: { type: 'string' },
+          goal: { type: 'string' }
         }
       }
     }
@@ -358,15 +407,60 @@ async function executeReadonlyTools(runId: string, messageId: string, toolCall: 
   }
 }
 
-function readonlyInstructions(runId: string) {
+async function buildBusinessSnapshot(prompt: string) {
+  const normalizedPrompt = prompt.toLowerCase();
+  const wantsCrm = /crm|客户|商机|订单|销售|customer|opportunit|order/.test(normalizedPrompt);
+  const wantsErp = /erp|财务|交易|账户|采购|现金|关账|finance|transaction|account/.test(normalizedPrompt);
+  const loaders: Array<Promise<{ label: string; content: string }>> = [];
+
+  if (wantsCrm) {
+    loaders.push(
+      listCustomers({ limit: 5 }).then((result) => ({ label: 'CRM 客户', content: result.content })),
+      listOpportunities({ limit: 5 }).then((result) => ({ label: 'CRM 商机', content: result.content })),
+      listOrders({ limit: 5 }).then((result) => ({ label: 'CRM 订单', content: result.content }))
+    );
+  }
+
+  if (wantsErp) {
+    loaders.push(
+      listFinanceAccounts({ limit: 5 }).then((result) => ({ label: 'ERP 财务账户', content: result.content })),
+      listTransactions({ limit: 5 }).then((result) => ({ label: 'ERP 交易', content: result.content }))
+    );
+  }
+
+  if (!loaders.length) {
+    return '';
+  }
+
+  const settled = await Promise.allSettled(loaders);
+  const blocks = settled.map((result, index) => {
+    if (result.status === 'fulfilled') {
+      return `### ${result.value.label}\n${trimForContext(result.value.content, 2400)}`;
+    }
+
+    return `### 业务数据 ${index + 1}\n读取失败：${result.reason instanceof Error ? result.reason.message : 'unknown error'}`;
+  });
+
+  return [
+    '以下业务数据快照由 Agent API 通过本项目 CRM/ERP HTTP API 实时读取。',
+    '如果用户问题涉及这些实体，必须优先基于这份真实数据回答；仍可继续调用工具获取更多数据。',
+    blocks.join('\n\n')
+  ].join('\n\n');
+}
+
+function readonlyInstructions(runId: string, businessSnapshot = '') {
   const attachmentNotes = readAttachmentNotes(runId);
+  const runContext = buildRunContext(runId);
 
   return [
     '你是 NBA 本地 Demo 的只读业务助理。',
     '你可以通过提供的 CRM/ERP 只读工具查询真实业务数据。',
     '你不能直接执行任何有副作用的动作。',
     '如果用户要求修改文件、执行命令或浏览器自动化，必须改为调用待审批请求工具，再向用户说明需要审批什么。',
+    '如果历史里曾经出现“等待审批”，但当前真实上下文显示该动作已 approved/completed/rejected/failed，必须按真实上下文回答，不能沿用过期说法。',
     '回答要简洁、业务化，并明确指出你使用了哪些真实数据。',
+    runContext,
+    businessSnapshot ? `实时业务数据快照：\n${businessSnapshot}` : '',
     attachmentNotes ? `当前 run 已上传的文件：\n${attachmentNotes}` : ''
   ]
     .filter(Boolean)
@@ -374,6 +468,8 @@ function readonlyInstructions(runId: string) {
 }
 
 function operatorInstructions(action: StoredActionRequest) {
+  const runContext = buildRunContext(action.runId);
+
   return [
     '你是 NBA 本地 Demo 的操作型 Agent。',
     '当前动作已经获得用户审批，可以继续执行。',
@@ -381,7 +477,8 @@ function operatorInstructions(action: StoredActionRequest) {
     '若是浏览器动作，只允许访问 localhost / 127.0.0.1。',
     `动作类型：${action.kind}`,
     `动作摘要：${action.summary}`,
-    action.target ? `目标：${action.target}` : ''
+    action.target ? `目标：${action.target}` : '',
+    runContext
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -389,7 +486,11 @@ function operatorInstructions(action: StoredActionRequest) {
 
 async function runReadonlyTurn(runId: string, messageId: string, prompt: string) {
   const link = sessionLinkFor(runId);
-  let previousResponseId = link.readonlyResponseId;
+  const hasResolvedActions = listActionRequests(runId).some((item) => {
+    return item.status === 'completed' || item.status === 'rejected' || item.status === 'failed';
+  });
+  const businessSnapshot = await buildBusinessSnapshot(prompt);
+  let previousResponseId = hasResolvedActions ? null : link.readonlyResponseId;
   let currentInput: unknown = prompt;
   let assistantText = '';
 
@@ -398,7 +499,7 @@ async function runReadonlyTurn(runId: string, messageId: string, prompt: string)
       agentId: 'nba-demo-readonly',
       sessionKey: link.readonlySessionKey,
       previousResponseId,
-      instructions: readonlyInstructions(runId),
+      instructions: readonlyInstructions(runId, businessSnapshot),
       input: currentInput,
       tools: approvalToolDefinitions()
     });
@@ -520,39 +621,89 @@ function saveUploadedFiles(runId: string, messageId: string, files: Express.Mult
   }
 }
 
-app.get('/health', (_request, response) => {
-  response.json({
-    ok: true,
-    service: 'agent'
-  });
-});
+type SerializedRun = NonNullable<ReturnType<typeof serializeRun>>;
 
-app.get('/api/runs', requireAuth, (request, response) => {
-  const user = (request as AuthenticatedRequest).user;
-  response.json({
-    data: listRuns(user.sub)
-  });
-});
+interface RunMutationResult {
+  reused: boolean;
+  run: SerializedRun;
+}
 
-app.get('/api/runs/:id', requireAuth, (request, response) => {
-  const run = serializeRun(request.params.id);
+const dedupeWindowMs = 15_000;
+const createRunInFlight = new Map<string, Promise<RunMutationResult>>();
+const appendMessageInFlight = new Map<string, Promise<RunMutationResult>>();
 
-  if (!run) {
-    response.status(404).json({ message: 'Run not found' });
-    return;
+function fileSignature(files: Express.Multer.File[] | undefined) {
+  return (files ?? [])
+    .map((file) => `${file.originalname}:${file.size}:${file.mimetype}`)
+    .sort()
+    .join('|');
+}
+
+function normalizeDedupeText(value: string) {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function createMutationKey(parts: string[]) {
+  return parts.map((part) => encodeURIComponent(part)).join('::');
+}
+
+function isRecentTimestamp(value: string, windowMs = dedupeWindowMs) {
+  const timestamp = Date.parse(value);
+
+  if (Number.isNaN(timestamp)) {
+    return false;
   }
 
-  response.json(run);
-});
+  return Date.now() - timestamp <= windowMs;
+}
 
-app.post('/api/runs', requireAuth, upload.array('files', 10), async (request, response) => {
-  const user = (request as AuthenticatedRequest).user;
-  const prompt = String(request.body.prompt || '').trim();
-  const model = String(request.body.model || env.openclawModel).trim();
+function cleanupUnusedUploads(files: Express.Multer.File[] | undefined) {
+  for (const file of files ?? []) {
+    void fs.promises.unlink(file.path).catch(() => undefined);
+  }
+}
 
-  if (!prompt) {
-    response.status(400).json({ message: 'Prompt is required' });
-    return;
+function findRecentDuplicateRun(userId: string, prompt: string, model: string, files: Express.Multer.File[] | undefined) {
+  if (files?.length) {
+    return null;
+  }
+
+  const normalizedPrompt = normalizeDedupeText(prompt);
+  const duplicate = listRuns(userId).find((run) => {
+    return run.model === model
+      && normalizeDedupeText(run.promptPreview) === normalizedPrompt
+      && isRecentTimestamp(run.createdAt);
+  });
+
+  return duplicate ? serializeRun(duplicate.id) : null;
+}
+
+function findRecentDuplicateMessage(runId: string, prompt: string, files: Express.Multer.File[] | undefined) {
+  if (files?.length) {
+    return null;
+  }
+
+  const normalizedPrompt = normalizeDedupeText(prompt);
+  const duplicate = [...listMessages(runId)].reverse().find((message) => {
+    return message.role === 'user'
+      && normalizeDedupeText(message.content) === normalizedPrompt
+      && isRecentTimestamp(message.createdAt);
+  });
+
+  return duplicate ? serializeRun(runId) : null;
+}
+
+async function createRunMutation(input: {
+  user: AuthUser;
+  prompt: string;
+  model: string;
+  files: Express.Multer.File[] | undefined;
+}): Promise<RunMutationResult> {
+  const recent = findRecentDuplicateRun(input.user.sub, input.prompt, input.model, input.files);
+
+  if (recent) {
+    cleanupUnusedUploads(input.files);
+    return { reused: true, run: recent };
   }
 
   const runId = randomUUID();
@@ -560,22 +711,22 @@ app.post('/api/runs', requireAuth, upload.array('files', 10), async (request, re
 
   createRun({
     id: runId,
-    userId: user.sub,
-    title: summarizePrompt(prompt),
-    model,
-    promptPreview: prompt
+    userId: input.user.sub,
+    title: summarizePrompt(input.prompt),
+    model: input.model,
+    promptPreview: input.prompt
   });
   addMessage({
     id: messageId,
     runId,
     role: 'user',
-    content: prompt,
+    content: input.prompt,
     createdAt: new Date().toISOString()
   });
-  saveUploadedFiles(runId, messageId, request.files as Express.Multer.File[] | undefined);
+  saveUploadedFiles(runId, messageId, input.files);
 
   try {
-    const assistantText = await runReadonlyTurn(runId, messageId, prompt);
+    const assistantText = await runReadonlyTurn(runId, messageId, input.prompt);
     addMessage({
       id: randomUUID(),
       runId,
@@ -605,53 +756,55 @@ app.post('/api/runs', requireAuth, upload.array('files', 10), async (request, re
     });
   }
 
-  emitRunEvent(runId, 'run.updated', serializeRun(runId) ?? {});
-  response.status(201).json(serializeRun(runId));
-});
-
-app.post('/api/runs/:id/messages', requireAuth, upload.array('files', 10), async (request, response) => {
-  const runId = request.params.id;
-  const run = getRun(runId);
+  const run = serializeRun(runId);
 
   if (!run) {
-    response.status(404).json({ message: 'Run not found' });
-    return;
+    throw new Error('Run was not persisted');
   }
 
-  const prompt = String(request.body.prompt || '').trim();
+  emitRunEvent(runId, 'run.updated', run);
+  return { reused: false, run };
+}
 
-  if (!prompt) {
-    response.status(400).json({ message: 'Prompt is required' });
-    return;
+async function appendMessageMutation(input: {
+  runId: string;
+  prompt: string;
+  files: Express.Multer.File[] | undefined;
+}): Promise<RunMutationResult> {
+  const recent = findRecentDuplicateMessage(input.runId, input.prompt, input.files);
+
+  if (recent) {
+    cleanupUnusedUploads(input.files);
+    return { reused: true, run: recent };
   }
 
   const userMessageId = randomUUID();
   addMessage({
     id: userMessageId,
-    runId,
+    runId: input.runId,
     role: 'user',
-    content: prompt,
+    content: input.prompt,
     createdAt: new Date().toISOString()
   });
-  saveUploadedFiles(runId, userMessageId, request.files as Express.Multer.File[] | undefined);
+  saveUploadedFiles(input.runId, userMessageId, input.files);
   updateRun({
-    id: runId,
+    id: input.runId,
     status: 'running',
-    promptPreview: prompt
+    promptPreview: input.prompt
   });
 
   try {
-    const assistantText = await runReadonlyTurn(runId, userMessageId, prompt);
+    const assistantText = await runReadonlyTurn(input.runId, userMessageId, input.prompt);
     addMessage({
       id: randomUUID(),
-      runId,
+      runId: input.runId,
       role: 'assistant',
       content: assistantText,
       createdAt: new Date().toISOString()
     });
-    const actionRequests = listActionRequests(runId);
+    const actionRequests = listActionRequests(input.runId);
     updateRun({
-      id: runId,
+      id: input.runId,
       status: actionRequests.some((item) => item.status === 'pending') ? 'blocked' : 'completed',
       summary: assistantText.slice(0, 220)
     });
@@ -659,20 +812,163 @@ app.post('/api/runs/:id/messages', requireAuth, upload.array('files', 10), async
     const message = error instanceof Error ? error.message : 'Unexpected agent failure';
     addMessage({
       id: randomUUID(),
-      runId,
+      runId: input.runId,
       role: 'assistant',
       content: `本次追问没有成功完成：${message}`,
       createdAt: new Date().toISOString()
     });
     updateRun({
-      id: runId,
+      id: input.runId,
       status: 'blocked',
       summary: message
     });
   }
 
-  emitRunEvent(runId, 'run.updated', serializeRun(runId) ?? {});
-  response.json(serializeRun(runId));
+  const run = serializeRun(input.runId);
+
+  if (!run) {
+    throw new Error('Run was not persisted');
+  }
+
+  emitRunEvent(input.runId, 'run.updated', run);
+  return { reused: false, run };
+}
+
+async function withCreateRunDedupe(input: {
+  user: AuthUser;
+  prompt: string;
+  model: string;
+  files: Express.Multer.File[] | undefined;
+}) {
+  const key = createMutationKey([
+    'create',
+    input.user.sub,
+    input.model,
+    normalizeDedupeText(input.prompt),
+    fileSignature(input.files)
+  ]);
+  const existing = createRunInFlight.get(key);
+
+  if (existing) {
+    cleanupUnusedUploads(input.files);
+    return {
+      ...(await existing),
+      reused: true
+    };
+  }
+
+  const task = createRunMutation(input);
+  createRunInFlight.set(key, task);
+
+  try {
+    return await task;
+  } finally {
+    createRunInFlight.delete(key);
+  }
+}
+
+async function withAppendMessageDedupe(input: {
+  runId: string;
+  prompt: string;
+  files: Express.Multer.File[] | undefined;
+}) {
+  const key = createMutationKey([
+    'message',
+    input.runId,
+    normalizeDedupeText(input.prompt),
+    fileSignature(input.files)
+  ]);
+  const existing = appendMessageInFlight.get(key);
+
+  if (existing) {
+    cleanupUnusedUploads(input.files);
+    return {
+      ...(await existing),
+      reused: true
+    };
+  }
+
+  const task = appendMessageMutation(input);
+  appendMessageInFlight.set(key, task);
+
+  try {
+    return await task;
+  } finally {
+    appendMessageInFlight.delete(key);
+  }
+}
+
+app.get('/health', (_request, response) => {
+  response.json({
+    ok: true,
+    service: 'agent'
+  });
+});
+
+app.get('/api/runs', requireAuth, (request, response) => {
+  const user = (request as AuthenticatedRequest).user;
+  response.json({
+    data: listRuns(user.sub)
+  });
+});
+
+app.get('/api/runs/:id', requireAuth, (request, response) => {
+  const run = serializeRun(request.params.id);
+
+  if (!run) {
+    response.status(404).json({ message: 'Run not found' });
+    return;
+  }
+
+  response.json(run);
+});
+
+app.post('/api/runs', requireAuth, upload.array('files', 10), async (request, response) => {
+  const user = (request as AuthenticatedRequest).user;
+  const prompt = String(request.body.prompt || '').trim();
+  const model = String(request.body.model || env.openclawModel).trim();
+  const files = request.files as Express.Multer.File[] | undefined;
+
+  if (!prompt) {
+    cleanupUnusedUploads(files);
+    response.status(400).json({ message: 'Prompt is required' });
+    return;
+  }
+
+  const result = await withCreateRunDedupe({
+    user,
+    prompt,
+    model,
+    files
+  });
+  response.status(result.reused ? 200 : 201).json(result.run);
+});
+
+app.post('/api/runs/:id/messages', requireAuth, upload.array('files', 10), async (request, response) => {
+  const runId = request.params.id;
+  const files = request.files as Express.Multer.File[] | undefined;
+  const run = getRun(runId);
+
+  if (!run) {
+    cleanupUnusedUploads(files);
+    response.status(404).json({ message: 'Run not found' });
+    return;
+  }
+
+  const prompt = String(request.body.prompt || '').trim();
+
+  if (!prompt) {
+    cleanupUnusedUploads(files);
+    response.status(400).json({ message: 'Prompt is required' });
+    return;
+  }
+
+  const result = await withAppendMessageDedupe({
+    runId,
+    prompt,
+    files
+  });
+  response.status(200).json(result.run);
 });
 
 app.post('/api/runs/:id/action-requests/:requestId/approve', requireAuth, async (request, response) => {
@@ -706,11 +1002,13 @@ app.post('/api/runs/:id/action-requests/:requestId/approve', requireAuth, async 
       content: `审批通过并已执行：${resultSummary}`,
       createdAt: new Date().toISOString()
     });
+    const remainingPendingActions = listActionRequests(runId).some((item) => item.status === 'pending');
     updateRun({
       id: runId,
-      status: 'completed',
+      status: remainingPendingActions ? 'blocked' : 'completed',
       summary: resultSummary.slice(0, 220)
     });
+    resetReadonlySession(runId);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Action execution failed';
     updateActionRequest({
@@ -730,6 +1028,7 @@ app.post('/api/runs/:id/action-requests/:requestId/approve', requireAuth, async 
       status: 'blocked',
       summary: message
     });
+    resetReadonlySession(runId);
   }
 
   emitRunEvent(runId, 'run.updated', serializeRun(runId) ?? {});
@@ -762,6 +1061,7 @@ app.post('/api/runs/:id/action-requests/:requestId/reject', requireAuth, (reques
     status: 'blocked',
     summary: '有动作请求被拒绝，等待新的指令。'
   });
+  resetReadonlySession(runId);
   emitRunEvent(runId, 'run.updated', serializeRun(runId) ?? {});
   response.json(serializeRun(runId));
 });

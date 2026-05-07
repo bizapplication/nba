@@ -34,6 +34,24 @@ export interface HomeChatOutput {
   description: string
 }
 
+export type HomeActionRequestKind = 'file' | 'command' | 'browser'
+export type HomeActionRequestStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'failed'
+
+export interface HomeActionRequest {
+  id: string
+  runId: string
+  kind: HomeActionRequestKind
+  status: HomeActionRequestStatus
+  title: string
+  summary: string
+  target: string | null
+  requestedAt: string
+  updatedAt: string
+  resultSummary: string | null
+  errorMessage: string | null
+  payload: Record<string, unknown>
+}
+
 export interface HomeChatThread {
   runId: string
   title: string
@@ -45,6 +63,7 @@ export interface HomeChatThread {
   summary: string
   attachments: HomeAttachment[]
   messages: HomeChatMessage[]
+  actionRequests: HomeActionRequest[]
   outputs: HomeChatOutput[]
 }
 

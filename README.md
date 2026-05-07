@@ -210,14 +210,25 @@ pnpm demo:setup
 pnpm demo:start
 ```
 
+默认路径：
+
+- 不需要预装 OpenClaw；`demo:setup` 会把固定版本的 OpenClaw sidecar 安装到 `.runtime/openclaw/`
+- 不依赖你本机已有的 OpenClaw 配置；项目自己的状态隔离在 `.runtime/openclaw-home/`
+- PostgreSQL 默认由 `database/docker-compose.yml` 拉起；只有在你显式提供本地库时才会走回退
+- 新机器默认只需要补一项必填配置：`DEEPSEEK_API_KEY`
+
 默认约束：
 
 - 仅支持 **macOS**
-- 需要 `OPENAI_API_KEY` 和 `OPENCLAW_GATEWAY_TOKEN`
-- OpenClaw 运行时会放在 `.runtime/openclaw/`
+- 默认使用 `DEEPSEEK_API_KEY + deepseek/deepseek-v4-flash`
+- 如需改用 OpenAI，可把 `OPENCLAW_DEMO_MODEL` 切到 `openai/gpt-5.4` 并填入 `OPENAI_API_KEY`
+- `OPENCLAW_GATEWAY_TOKEN` 在 `.env.example` 里已经给了 demo 默认值，也可以自行替换
+- OpenClaw 运行时会放在 `.runtime/openclaw/`，由本仓库脚本管理
 - OpenClaw 本地状态会隔离在 `.runtime/openclaw-home/`
 - 平台和 Agent 的持久化数据会放在 `.data/`
 - 上传附件会落到 `demo-files/uploads/`
+- `OPENCLAW_USE_GLOBAL_CLI` / `OPENCLAW_AUTH_SOURCE_HOME` 只是本地开发回退，不是 clone 后开箱路径
+- 第一次触发 AI 对话时，OpenClaw 会预热并按需安装部分 provider/runtime 依赖，首轮响应会比后续慢
 
 常用命令：
 
